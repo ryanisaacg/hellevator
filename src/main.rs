@@ -6,19 +6,19 @@ use quicksilver::graphics::*;
 use quicksilver::input::*;
 use std::time::Duration;
 
-const PLAYER_RADIUS: f32 = 48.0;
+const PLAYER_RADIUS: i32 = 24;
 const PLAYER_SPEED: f32 = 5.0;
 
 pub struct State {
     window: Window,
     canvas: Canvas,
-    player_pos: Vector
+    player_pos: Circle
 }
 
 impl State {
     pub fn new() -> State {
         let (window, canvas) = WindowBuilder::new().build("Hellevator", 960, 540);
-        let player_pos = Vector::newi(100, 100);
+        let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
         State { window, canvas, player_pos }
     }
 
@@ -37,7 +37,7 @@ impl State {
 
     pub fn draw(&mut self) {
         self.canvas.clear(Color::black());
-        self.canvas.draw_rect(Rectangle::newv(self.player_pos, Vector::new(PLAYER_RADIUS, PLAYER_RADIUS)), Color::white());
+        self.canvas.draw_circle(self.player_pos, Color::white());
         self.canvas.present(&self.window);
     }
 }
