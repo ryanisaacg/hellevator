@@ -9,7 +9,7 @@ impl Enemy {
         Enemy { pos }
     }
 
-    pub fn update(&self) {
-        
+    pub fn update(&mut self, player: Circle) {
+        self.pos = self.pos.translate((player.center() - self.pos.center()).normalize() * 4);
     }
 }

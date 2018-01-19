@@ -13,9 +13,9 @@ const PLAYER_RADIUS: i32 = 24;
 const PLAYER_SPEED: f32 = 5.0;
 
 pub struct State {
+    pub player_pos: Circle,
     window: Window,
     canvas: Canvas,
-    player_pos: Circle,
     enemies: Vec<Enemy>
 }
 
@@ -32,13 +32,15 @@ impl State {
     }
 
     pub fn update(&mut self) -> Duration {
-        let keyboard = self.window.keyboard();
-        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
-        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
-        for e in self.enemies.iter() {
-            e.update();
+        {
+            let keyboard = self.window.keyboard();
+            self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED } else { 0.0 };
+            self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
+            self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
+            self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
+        }
+        for e in self.enemies.iter_mut() {
+            e.update(self.player_pos);
         }
         Duration::from_millis(16)
     }
