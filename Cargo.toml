@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["Ryan Goldstein <ryanisaacg@gmail.com>"]
 
 [dependencies]
-quicksilver = "0.1.1"
+quicksilver = { git = "https://github.com/ryanisaacg/quicksilver" }
