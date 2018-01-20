@@ -42,6 +42,17 @@ impl State {
         for e in self.enemies.iter_mut() {
             e.update(self.player_pos);
         }
+        let mut i = 0;
+        while i < self.enemies.len() {
+            if self.enemies[i].remove {
+                self.enemies.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+        while self.enemies.len() < 4 {
+            self.enemies.push(Enemy::new(Circle::newi(0, 0, PLAYER_RADIUS/2)));
+        }
         Duration::from_millis(16)
     }
 
