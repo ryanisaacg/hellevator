@@ -9,6 +9,8 @@ use quicksilver::*;
 
 mod enemy;
 use enemy::Enemy;
+mod projectile;
+use projectile::Projectile;
 
 const PLAYER_RADIUS: i32 = 24;
 const PLAYER_SPEED: f32 = 5.0;
@@ -41,7 +43,8 @@ impl Screen for LoadingScreen {
                 let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)), 
                                    Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)), 
                                    Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))];
-                Some(Box::new(GameScreen { player_pos, enemies, player_image, crosshair }))
+                let projectiles = vec![];
+                Some(Box::new(GameScreen { player_pos, enemies, projectiles, player_image, crosshair }))
             } else {
                 self.crosshair.update();
                 None
@@ -61,6 +64,7 @@ impl Screen for LoadingScreen {
 pub struct GameScreen {
     player_pos: Circle,
     enemies: Vec<Enemy>,
+    projectiles: Vec<Projectile>,
     player_image: Image,
     crosshair: Image
 }
@@ -72,8 +76,41 @@ impl Screen for GameScreen {
         self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
         self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
         self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
-        for e in self.enemies.iter() {
-            e.update();
+        if keyboard[Key::Space].is_down() {
+            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32)));
+        }
+        for e in self.enemies.iter_mut() {
+            e.update(self.player_pos);
+        }
+        for p in self.projectiles.iter_mut() {
+            p.update();
+        }
+        for p in self.projectiles.iter_mut() {
+            for e in self.enemies.iter_mut() {
+                if p.pos.overlaps_circ(e.pos) {
+                    e.remove = true;
+                    p.remove = true;
+                }
+            }
+        }
+        let mut i = 0;
+        while i < self.enemies.len() {
+            if self.enemies[i].remove {
+                self.enemies.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+        i = 0;
+        while i < self.projectiles.len() {
+            if self.projectiles[i].remove {
+                self.projectiles.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+        while self.enemies.len() < 4 {
+            self.enemies.push(Enemy::new(Circle::newi(0, 0, PLAYER_RADIUS/2)));
         }
         None
     }
@@ -83,6 +120,9 @@ impl Screen for GameScreen {
         canvas.draw_circle(self.player_pos, Color::white());
         for e in self.enemies.iter() {
             canvas.draw_circle(e.pos, Color::red());
+        }
+        for p in self.projectiles.iter() {
+            canvas.draw_circle(p.pos, Color::yellow());
         }
         canvas.present(window);
     }
