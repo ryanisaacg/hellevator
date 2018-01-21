@@ -87,6 +87,11 @@ impl Screen for GameScreen {
         if self.shoot_cooldown > 0 {
             self.shoot_cooldown -= 1;
         }
+        if window.mouse().right().is_down() {
+            for p in self.projectiles.iter_mut() {
+                p.vel = (window.mouse().pos() - p.pos.center()).normalize() * 5;
+            }
+        }
         for e in self.enemies.iter_mut() {
             e.update(self.player_pos);
         }
