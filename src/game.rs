@@ -72,7 +72,7 @@ impl Screen for GameScreen {
         let double = Transform::scale(Vector::newi(2, 2));
         for x in 0..30 {
             for y in 0..17 {
-                canvas.draw_image_trans(&self.wood, Vector::new(x as f32 * 32.0 + 16.0, y as f32 * 32.0 + 16.0), Color::white(), double);
+                canvas.draw_image_trans(&self.wood, Vector::new(x as f32 * 64.0 + 32.0, y as f32 * 64.0 + 32.0), Color::white(), double);
             }
         }
         //Draw the player
