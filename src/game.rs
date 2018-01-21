@@ -7,6 +7,8 @@ pub struct GameScreen {
     pub player_image: Image,
     pub crosshair: Image,
     pub gun: Image,
+    pub wood: Image,
+    pub shadow: Image,
     pub shoot_cooldown: i32
 }
 
@@ -68,7 +70,13 @@ impl Screen for GameScreen {
     fn draw(&mut self, window: &mut Window, canvas: &mut Canvas) {
         canvas.clear(Color::black());
         let double = Transform::scale(Vector::newi(2, 2));
+        for x in 0..30 {
+            for y in 0..17 {
+                canvas.draw_image_trans(&self.wood, Vector::new(x as f32 * 32.0 + 16.0, y as f32 * 32.0 + 16.0), Color::white(), double);
+            }
+        }
         //Draw the player
+        canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
         canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(), double);
         //Draw the player's weapon
         let point = window.mouse().pos() - self.player_pos.center();
