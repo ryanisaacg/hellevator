@@ -10,6 +10,7 @@ pub struct GameScreen {
     pub wood: Image,
     pub shadow: Image,
     pub wall: Image,
+    pub wall_scroll: f32,
     pub shoot_cooldown: i32
 }
 
@@ -65,6 +66,7 @@ impl Screen for GameScreen {
         while self.enemies.len() < 4 {
             self.enemies.push(Enemy::new(Circle::newi(0, 0, PLAYER_RADIUS/2)));
         }
+        self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         None
     }
 
@@ -74,7 +76,8 @@ impl Screen for GameScreen {
         for x in 0..30 {
             for y in 0..17 {
                 let image = if y < 2 { &self.wall } else { &self.wood };
-                canvas.draw_image_trans(image, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0), Color::white(), double);
+                let offset = if y < 2 { self.wall_scroll } else { 0.0 };
+                canvas.draw_image_trans(image, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + offset), Color::white(), double);
             }
         }
         //Draw the player

@@ -61,6 +61,7 @@ impl Screen for LoadingScreen {
                 wood,
                 shadow,
                 wall,
+                wall_scroll: 0.0,
                 shoot_cooldown }))
         } else {
             None
