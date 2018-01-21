@@ -9,6 +9,7 @@ pub struct GameScreen {
     pub gun: Image,
     pub wood: Image,
     pub shadow: Image,
+    pub wall: Image,
     pub shoot_cooldown: i32
 }
 
@@ -72,7 +73,8 @@ impl Screen for GameScreen {
         let double = Transform::scale(Vector::newi(2, 2));
         for x in 0..30 {
             for y in 0..17 {
-                canvas.draw_image_trans(&self.wood, Vector::new(x as f32 * 64.0 + 32.0, y as f32 * 64.0 + 32.0), Color::white(), double);
+                let image = if y < 2 { &self.wall } else { &self.wood };
+                canvas.draw_image_trans(image, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0), Color::white(), double);
             }
         }
         //Draw the player

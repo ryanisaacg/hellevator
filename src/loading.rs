@@ -5,7 +5,8 @@ pub struct LoadingScreen {
     crosshair: LoadingAsset<Image>,
     gun: LoadingAsset<Image>,
     wood: LoadingAsset<Image>,
-    shadow: LoadingAsset<Image>
+    shadow: LoadingAsset<Image>,
+    wall: LoadingAsset<Image>
 }
 
 impl InitialScreen for LoadingScreen {
@@ -21,7 +22,8 @@ impl InitialScreen for LoadingScreen {
             crosshair: Image::load("img/crosshair.png"),
             gun: Image::load("img/gun.png"),
             wood: Image::load("img/wood.png"),
-            shadow: Image::load("img/shadow.png")
+            shadow: Image::load("img/shadow.png"),
+            wall: Image::load("img/wall.png")
         }
     }
 }
@@ -34,6 +36,7 @@ impl Screen for LoadingScreen {
             &mut self.gun,
             &mut self.wood,
             &mut self.shadow,
+            &mut self.wall
         ];
         if let Some(assets) = update_all(assets) {
             let player_image = assets[0].clone();
@@ -41,6 +44,7 @@ impl Screen for LoadingScreen {
             let gun = assets[2].clone();
             let wood = assets[3].clone();
             let shadow = assets[4].clone();
+            let wall = assets[5].clone();
             let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
             let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
@@ -56,6 +60,7 @@ impl Screen for LoadingScreen {
                 gun,
                 wood,
                 shadow,
+                wall,
                 shoot_cooldown }))
         } else {
             None
