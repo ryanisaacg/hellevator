@@ -6,6 +6,7 @@ pub struct GameScreen {
     pub projectiles: Vec<Projectile>,
     pub player_image: Image,
     pub crosshair: Image,
+    pub gun: Image,
     pub shoot_cooldown: i32
 }
 
@@ -66,14 +67,26 @@ impl Screen for GameScreen {
 
     fn draw(&mut self, window: &mut Window, canvas: &mut Canvas) {
         canvas.clear(Color::black());
-        canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(), Transform::scale(Vector::newi(2, 2)));
+        let double = Transform::scale(Vector::newi(2, 2));
+        //Draw the player
+        canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(), double);
+        //Draw the player's weapon
+        let point = window.mouse().pos() - self.player_pos.center();
+        let rotation = point.angle();
+        let scale = Vector::new(1.0, point.x.signum());
+        canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(), 
+                                Transform::translate(Vector::newi(0, 10))
+                                * Transform::rotate(rotation) 
+                                * double
+                                * Transform::scale(scale)
+                                * Transform::translate(Vector::newi(12, 0)));
         for e in self.enemies.iter() {
             canvas.draw_circle(e.pos, Color::red());
         }
         for p in self.projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
         }
-        canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), Transform::scale(Vector::newi(2, 2)));
+        canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), double);
         canvas.present(window);
     }
 
