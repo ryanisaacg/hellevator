@@ -42,11 +42,12 @@ impl Screen for LoadingScreen {
                 let player_image = player_image.clone();
                 let crosshair = crosshair.clone();
                 let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
-                let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)), 
-                                   Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)), 
+                let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
+                                   Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
                                    Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))];
                 let projectiles = vec![];
-                Some(Box::new(GameScreen { player_pos, enemies, projectiles, player_image, crosshair }))
+                let shoot_cooldown = 0;
+                Some(Box::new(GameScreen { player_pos, enemies, projectiles, player_image, crosshair, shoot_cooldown }))
             } else {
                 self.crosshair.update();
                 None
@@ -68,7 +69,8 @@ pub struct GameScreen {
     enemies: Vec<Enemy>,
     projectiles: Vec<Projectile>,
     player_image: Image,
-    crosshair: Image
+    crosshair: Image,
+    shoot_cooldown: i32
 }
 
 impl Screen for GameScreen {
@@ -78,8 +80,12 @@ impl Screen for GameScreen {
         self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
         self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
         self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
-        if keyboard[Key::Space].is_down() {
-            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32)));
+        if window.mouse().left().is_down() && self.shoot_cooldown <= 0 {
+            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32), (window.mouse().pos() - self.player_pos.center()).normalize() * 5));
+            self.shoot_cooldown = 10;
+        }
+        if self.shoot_cooldown > 0 {
+            self.shoot_cooldown -= 1;
         }
         for e in self.enemies.iter_mut() {
             e.update(self.player_pos);

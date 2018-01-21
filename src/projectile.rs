@@ -2,18 +2,18 @@ use quicksilver::geom::*;
 
 pub struct Projectile {
     pub pos: Circle,
+    pub vel: Vector,
     pub remove: bool
 }
 
 impl Projectile {
-    pub fn new(pos: Circle) -> Projectile {
-        Projectile { pos, remove: false }
+    pub fn new(pos: Circle, vel: Vector) -> Projectile {
+        Projectile { pos, vel, remove: false }
     }
 
     pub fn update(&mut self) {
-        self.pos.x += 5.0;
-
-        if self.pos.x > 1000.0 {
+        self.pos = self.pos.translate(self.vel);
+        if self.pos.x < -100.0 || self.pos.x > 1100.0 || self.pos.y < -100.0 || self.pos.y > 1100.0 {
             self.remove = true;
         }
     }
