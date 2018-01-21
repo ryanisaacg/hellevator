@@ -22,7 +22,9 @@ pub struct LoadingScreen {
 
 impl InitialScreen for LoadingScreen {
     fn configure() -> (Window, Canvas) {
-        WindowBuilder::new().build("Hellevator", 960, 540)
+        WindowBuilder::new()
+            .with_show_cursor(false)
+            .build("Hellevator", 960, 540)
     }
 
     fn new() -> Self {
@@ -117,13 +119,14 @@ impl Screen for GameScreen {
 
     fn draw(&mut self, window: &mut Window, canvas: &mut Canvas) {
         canvas.clear(Color::black());
-        canvas.draw_circle(self.player_pos, Color::white());
+        canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(), Transform::scale(Vector::newi(2, 2)));
         for e in self.enemies.iter() {
             canvas.draw_circle(e.pos, Color::red());
         }
         for p in self.projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
         }
+        canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), Transform::scale(Vector::newi(2, 2)));
         canvas.present(window);
     }
 
