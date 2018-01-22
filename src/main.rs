@@ -5,6 +5,7 @@ use quicksilver::asset::*;
 use quicksilver::geom::*;
 use quicksilver::graphics::*;
 use quicksilver::input::*;
+use quicksilver::sound::*;
 use quicksilver::*;
 
 mod enemy;

@@ -10,6 +10,7 @@ pub struct GameScreen {
     pub wood: Image,
     pub shadow: Image,
     pub wall: Image,
+    pub fire: Sound,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32
 }
@@ -22,6 +23,7 @@ impl Screen for GameScreen {
         self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
         self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
         if window.mouse().left().is_down() && self.shoot_cooldown <= 0 {
+            self.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32), (window.mouse().pos() - self.player_pos.center()).normalize() * 5));
             self.shoot_cooldown = 10;
         }

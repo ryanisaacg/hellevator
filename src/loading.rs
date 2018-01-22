@@ -6,7 +6,8 @@ pub struct LoadingScreen {
     gun: LoadingAsset<Image>,
     wood: LoadingAsset<Image>,
     shadow: LoadingAsset<Image>,
-    wall: LoadingAsset<Image>
+    wall: LoadingAsset<Image>,
+    fire: LoadingAsset<Sound>
 }
 
 impl InitialScreen for LoadingScreen {
@@ -23,14 +24,15 @@ impl InitialScreen for LoadingScreen {
             gun: Image::load("img/gun.png"),
             wood: Image::load("img/wood.png"),
             shadow: Image::load("img/shadow.png"),
-            wall: Image::load("img/wall.png")
+            wall: Image::load("img/wall.png"),
+            fire: Sound::load("snd/gun.wav")
         }
     }
 }
 
 impl Screen for LoadingScreen {
     fn update(&mut self, _window: &mut Window, _canvas: &mut Canvas) -> Option<Box<Screen>> {
-        let mut assets = &mut [
+        let mut images = &mut [
             &mut self.player, 
             &mut self.crosshair,
             &mut self.gun,
@@ -38,31 +40,40 @@ impl Screen for LoadingScreen {
             &mut self.shadow,
             &mut self.wall
         ];
-        if let Some(assets) = update_all(assets) {
-            let player_image = assets[0].clone();
-            let crosshair = assets[1].clone();
-            let gun = assets[2].clone();
-            let wood = assets[3].clone();
-            let shadow = assets[4].clone();
-            let wall = assets[5].clone();
-            let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
-            let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
-                               Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
-                               Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))];
-            let projectiles = vec![];
-            let shoot_cooldown = 0;
-            Some(Box::new(GameScreen { 
-                player_pos, 
-                enemies, 
-                projectiles, 
-                player_image, 
-                crosshair, 
-                gun,
-                wood,
-                shadow,
-                wall,
-                wall_scroll: 0.0,
-                shoot_cooldown }))
+        let mut sounds = &mut [
+            &mut self.fire
+        ];
+        if let Some(images) = update_all(images) {
+            if let Some(sounds) = update_all(sounds) {
+                let player_image = images[0].clone();
+                let crosshair = images[1].clone();
+                let gun = images[2].clone();
+                let wood = images[3].clone();
+                let shadow = images[4].clone();
+                let wall = images[5].clone();
+                let fire = sounds[0].clone();
+                let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
+                let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
+                                   Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
+                                   Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))];
+                let projectiles = vec![];
+                let shoot_cooldown = 0;
+                Some(Box::new(GameScreen { 
+                    player_pos, 
+                    enemies, 
+                    projectiles, 
+                    player_image, 
+                    crosshair, 
+                    gun,
+                    wood,
+                    shadow,
+                    wall,
+                    fire,
+                    wall_scroll: 0.0,
+                    shoot_cooldown }))
+            } else {
+                None
+            }
         } else {
             None
         }
