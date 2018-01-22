@@ -7,7 +7,8 @@ pub struct LoadingScreen {
     wood: LoadingAsset<Image>,
     shadow: LoadingAsset<Image>,
     wall: LoadingAsset<Image>,
-    fire: LoadingAsset<Sound>
+    fire: LoadingAsset<Sound>,
+    bat: LoadingAsset<Image>
 }
 
 impl InitialScreen for LoadingScreen {
@@ -25,7 +26,8 @@ impl InitialScreen for LoadingScreen {
             wood: Image::load("img/wood.png"),
             shadow: Image::load("img/shadow.png"),
             wall: Image::load("img/wall.png"),
-            fire: Sound::load("snd/gun.wav")
+            bat: Image::load("img/bat.png"),
+            fire: Sound::load("snd/gun.wav"),
         }
     }
 }
@@ -38,7 +40,8 @@ impl Screen for LoadingScreen {
             &mut self.gun,
             &mut self.wood,
             &mut self.shadow,
-            &mut self.wall
+            &mut self.wall,
+            &mut self.bat
         ];
         let sounds = &mut [
             &mut self.fire
@@ -50,26 +53,18 @@ impl Screen for LoadingScreen {
             let wood = images[3].clone();
             let shadow = images[4].clone();
             let wall = images[5].clone();
+            let bat = images[6].clone();
             let fire = sounds[0].clone();
-            let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
-            let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
-                               Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
-                               Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))];
-            let projectiles = vec![];
-            let shoot_cooldown = 0;
-            Some(Box::new(GameScreen { 
-                player_pos, 
-                enemies, 
-                projectiles, 
+            Some(Box::new(GameScreen::new(LoadResults { 
                 player_image, 
                 crosshair, 
                 gun,
                 wood,
                 shadow,
                 wall,
-                fire,
-                wall_scroll: 0.0,
-                shoot_cooldown }))
+                bat,
+                fire
+            })))
         } else {
             None
         }

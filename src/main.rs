@@ -15,7 +15,7 @@ use projectile::Projectile;
 mod loading;
 use loading::LoadingScreen;
 mod game;
-use game::GameScreen;
+use game::*;
 
 const PLAYER_RADIUS: i32 = 24;
 const PLAYER_SPEED: f32 = 5.0;
