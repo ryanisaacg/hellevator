@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate quicksilver;
+extern crate rand;
 
 use quicksilver::asset::*;
 use quicksilver::geom::*;

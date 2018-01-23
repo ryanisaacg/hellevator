@@ -1,4 +1,5 @@
 use super::*;
+use rand::Rng;
 
 pub struct LoadResults {
     pub player_image: Image,
@@ -105,7 +106,10 @@ impl Screen for GameScreen {
             }
         }
         while self.enemies.len() < 4 {
-            self.enemies.push(Enemy::new(Circle::newi(0, 0, PLAYER_RADIUS/2)));
+            let mut rng = rand::thread_rng();
+            let x: i32 = if rng.gen() { rng.gen_range(0, 960) } else { 0 };
+            let y: i32 = if x == 0 { rng.gen_range(0, 540) } else { 0 };
+            self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2)));
         }
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
