@@ -11,7 +11,7 @@ impl Enemy {
     }
 
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32) {
-        self.pos = self.pos.translate((cord_pos.center() - self.pos.center()).normalize() * 4);
+        self.pos = self.pos.translate((cord_pos.center() - self.pos.center()).normalize() * 2);
 
         if self.pos.overlaps_circ(cord_pos) {
             self.remove = true;

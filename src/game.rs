@@ -36,6 +36,7 @@ impl GameScreen {
     pub fn new(load: LoadResults) -> GameScreen {
         GameScreen {
             player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
+            cord_pos: Circle::newi(960/2, 540/2, 48),
             enemies: vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))],
@@ -51,7 +52,8 @@ impl GameScreen {
             bat_frame: 0,
             fire: load.fire,
             wall_scroll: 0.0,
-            shoot_cooldown: 0
+            shoot_cooldown: 0,
+            cord_health: CORD_HEALTH
         }
     }
 }
@@ -139,7 +141,7 @@ impl Screen for GameScreen {
                                 * Transform::translate(Vector::newi(12, 0)));
         for e in self.enemies.iter() {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
-            canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double); 
+            canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
             canvas.draw_image_trans(image, e.pos.center(), Color::white(), double);
         }
         for p in self.projectiles.iter() {
