@@ -1,5 +1,17 @@
 use super::*;
 
+pub struct LoadResults {
+    pub player_image: Image,
+    pub crosshair: Image,
+    pub gun: Image,
+    pub wood: Image,
+    pub shadow: Image,
+    pub wall: Image,
+    pub bat: Image,
+    pub fire: Sound
+}
+
+
 pub struct GameScreen {
     pub player_pos: Circle,
     pub cord_pos: Circle,
@@ -12,9 +24,36 @@ pub struct GameScreen {
     pub shadow: Image,
     pub wall: Image,
     pub fire: Sound,
+    pub bat_up: Image,
+    pub bat_down: Image,
+    pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
     pub cord_health: f32
+}
+
+impl GameScreen {
+    pub fn new(load: LoadResults) -> GameScreen {
+        GameScreen {
+            player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
+            enemies: vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
+                               Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
+                               Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))],
+            projectiles: Vec::new(),
+            player_image: load.player_image,
+            crosshair: load.crosshair,
+            gun: load.gun,
+            wood: load.wood,
+            shadow: load.shadow,
+            wall: load.wall,
+            bat_up: load.bat.subimage(Rectangle::newi(0, 0, 16, 16)),
+            bat_down: load.bat.subimage(Rectangle::newi(16, 0, 16, 16)),
+            bat_frame: 0,
+            fire: load.fire,
+            wall_scroll: 0.0,
+            shoot_cooldown: 0
+        }
+    }
 }
 
 impl Screen for GameScreen {
@@ -71,6 +110,7 @@ impl Screen for GameScreen {
             self.enemies.push(Enemy::new(Circle::newi(0, 0, PLAYER_RADIUS/2)));
         }
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
+        self.bat_frame = (self.bat_frame + 1) % 60;
         None
     }
 
@@ -98,7 +138,9 @@ impl Screen for GameScreen {
                                 * Transform::scale(scale)
                                 * Transform::translate(Vector::newi(12, 0)));
         for e in self.enemies.iter() {
-            canvas.draw_circle(e.pos, Color::red());
+            let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
+            canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double); 
+            canvas.draw_image_trans(image, e.pos.center(), Color::white(), double);
         }
         for p in self.projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
