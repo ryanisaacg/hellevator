@@ -33,7 +33,7 @@ impl InitialScreen for LoadingScreen {
 impl Screen for LoadingScreen {
     fn update(&mut self, _window: &mut Window, _canvas: &mut Canvas) -> Option<Box<Screen>> {
         let images = &mut [
-            &mut self.player, 
+            &mut self.player,
             &mut self.crosshair,
             &mut self.gun,
             &mut self.wood,
@@ -52,24 +52,27 @@ impl Screen for LoadingScreen {
             let wall = images[5].clone();
             let fire = sounds[0].clone();
             let player_pos = Circle::newi(100, 100, PLAYER_RADIUS);
+            let cord_pos = Circle::newi(960/2, 540/2, 48);
             let enemies = vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))];
             let projectiles = vec![];
             let shoot_cooldown = 0;
-            Some(Box::new(GameScreen { 
-                player_pos, 
-                enemies, 
-                projectiles, 
-                player_image, 
-                crosshair, 
+            Some(Box::new(GameScreen {
+                player_pos,
+                cord_pos,
+                enemies,
+                projectiles,
+                player_image,
+                crosshair,
                 gun,
                 wood,
                 shadow,
                 wall,
                 fire,
                 wall_scroll: 0.0,
-                shoot_cooldown }))
+                shoot_cooldown,
+                cord_health: CORD_HEALTH }))
         } else {
             None
         }

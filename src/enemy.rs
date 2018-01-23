@@ -10,11 +10,12 @@ impl Enemy {
         Enemy { pos, remove: false }
     }
 
-    pub fn update(&mut self, player: Circle) {
-        self.pos = self.pos.translate((player.center() - self.pos.center()).normalize() * 4);
+    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32) {
+        self.pos = self.pos.translate((cord_pos.center() - self.pos.center()).normalize() * 4);
 
-        if (self.pos.center() - player.center()).len2() < 100.0 {
+        if self.pos.overlaps_circ(cord_pos) {
             self.remove = true;
+            *cord_health -= 10.0;
         }
     }
 }

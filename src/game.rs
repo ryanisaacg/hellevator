@@ -2,6 +2,7 @@ use super::*;
 
 pub struct GameScreen {
     pub player_pos: Circle,
+    pub cord_pos: Circle,
     pub enemies: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
     pub player_image: Image,
@@ -12,7 +13,8 @@ pub struct GameScreen {
     pub wall: Image,
     pub fire: Sound,
     pub wall_scroll: f32,
-    pub shoot_cooldown: i32
+    pub shoot_cooldown: i32,
+    pub cord_health: f32
 }
 
 impl Screen for GameScreen {
@@ -36,7 +38,7 @@ impl Screen for GameScreen {
             }
         }
         for e in self.enemies.iter_mut() {
-            e.update(self.player_pos);
+            e.update(self.player_pos, self.cord_pos, &mut self.cord_health);
         }
         for p in self.projectiles.iter_mut() {
             p.update();
@@ -89,9 +91,9 @@ impl Screen for GameScreen {
         let point = window.mouse().pos() - self.player_pos.center();
         let rotation = point.angle();
         let scale = Vector::new(1.0, point.x.signum());
-        canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(), 
+        canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
                                 Transform::translate(Vector::newi(0, 10))
-                                * Transform::rotate(rotation) 
+                                * Transform::rotate(rotation)
                                 * double
                                 * Transform::scale(scale)
                                 * Transform::translate(Vector::newi(12, 0)));
@@ -101,6 +103,8 @@ impl Screen for GameScreen {
         for p in self.projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
         }
+        canvas.draw_circle(self.cord_pos, Color::blue());
+        canvas.draw_rect(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0), Color::green());
         canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), double);
         canvas.present(window);
     }

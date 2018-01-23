@@ -19,5 +19,6 @@ use game::GameScreen;
 
 const PLAYER_RADIUS: i32 = 24;
 const PLAYER_SPEED: f32 = 5.0;
+const CORD_HEALTH: f32 = 1000.0;
 
 screens_loop!(LoadingScreen);
