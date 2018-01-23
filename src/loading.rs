@@ -8,7 +8,8 @@ pub struct LoadingScreen {
     shadow: LoadingAsset<Image>,
     wall: LoadingAsset<Image>,
     fire: LoadingAsset<Sound>,
-    bat: LoadingAsset<Image>
+    bat: LoadingAsset<Image>,
+    death: LoadingAsset<Sound>
 }
 
 impl InitialScreen for LoadingScreen {
@@ -28,6 +29,7 @@ impl InitialScreen for LoadingScreen {
             wall: Image::load("img/wall.png"),
             bat: Image::load("img/bat.png"),
             fire: Sound::load("snd/gun.wav"),
+            death: Sound::load("snd/bat-death.wav")
         }
     }
 }
@@ -44,7 +46,8 @@ impl Screen for LoadingScreen {
             &mut self.bat
         ];
         let sounds = &mut [
-            &mut self.fire
+            &mut self.fire,
+            &mut self.death
         ];
         if let (Some(images), Some(sounds)) = (update_all(images), update_all(sounds)) {
             let player_image = images[0].clone();
@@ -55,6 +58,7 @@ impl Screen for LoadingScreen {
             let wall = images[5].clone();
             let bat = images[6].clone();
             let fire = sounds[0].clone();
+            let death = sounds[1].clone();
             Some(Box::new(GameScreen::new(LoadResults {
                 player_image,
                 crosshair,
@@ -63,7 +67,8 @@ impl Screen for LoadingScreen {
                 shadow,
                 wall,
                 bat,
-                fire
+                fire,
+                death
             })))
         } else {
             None

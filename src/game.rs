@@ -9,7 +9,8 @@ pub struct LoadResults {
     pub shadow: Image,
     pub wall: Image,
     pub bat: Image,
-    pub fire: Sound
+    pub fire: Sound,
+    pub death: Sound
 }
 
 
@@ -27,6 +28,7 @@ pub struct GameScreen {
     pub fire: Sound,
     pub bat_up: Image,
     pub bat_down: Image,
+    pub death: Sound,
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
@@ -50,6 +52,7 @@ impl GameScreen {
             wall: load.wall,
             bat_up: load.bat.subimage(Rectangle::newi(0, 0, 16, 16)),
             bat_down: load.bat.subimage(Rectangle::newi(16, 0, 16, 16)),
+            death: load.death,
             bat_frame: 0,
             fire: load.fire,
             wall_scroll: 0.0,
@@ -97,6 +100,7 @@ impl Screen for GameScreen {
         while i < self.enemies.len() {
             if self.enemies[i].remove {
                 self.enemies.remove(i);
+                self.death.play();
             } else {
                 i += 1;
             }
