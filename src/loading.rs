@@ -35,7 +35,7 @@ impl InitialScreen for LoadingScreen {
 impl Screen for LoadingScreen {
     fn update(&mut self, _window: &mut Window, _canvas: &mut Canvas) -> Option<Box<Screen>> {
         let images = &mut [
-            &mut self.player, 
+            &mut self.player,
             &mut self.crosshair,
             &mut self.gun,
             &mut self.wood,
@@ -55,9 +55,9 @@ impl Screen for LoadingScreen {
             let wall = images[5].clone();
             let bat = images[6].clone();
             let fire = sounds[0].clone();
-            Some(Box::new(GameScreen::new(LoadResults { 
-                player_image, 
-                crosshair, 
+            Some(Box::new(GameScreen::new(LoadResults {
+                player_image,
+                crosshair,
                 gun,
                 wood,
                 shadow,

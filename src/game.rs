@@ -15,6 +15,7 @@ pub struct LoadResults {
 
 pub struct GameScreen {
     pub player_pos: Circle,
+    pub cord_pos: Circle,
     pub enemies: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
     pub player_image: Image,
@@ -28,13 +29,15 @@ pub struct GameScreen {
     pub bat_down: Image,
     pub bat_frame: u32,
     pub wall_scroll: f32,
-    pub shoot_cooldown: i32
+    pub shoot_cooldown: i32,
+    pub cord_health: f32
 }
 
 impl GameScreen {
     pub fn new(load: LoadResults) -> GameScreen {
         GameScreen {
             player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
+            cord_pos: Circle::newi(960/2, 540/2, 48),
             enemies: vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
                                Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))],
@@ -50,7 +53,8 @@ impl GameScreen {
             bat_frame: 0,
             fire: load.fire,
             wall_scroll: 0.0,
-            shoot_cooldown: 0
+            shoot_cooldown: 0,
+            cord_health: CORD_HEALTH
         }
     }
 }
@@ -76,7 +80,7 @@ impl Screen for GameScreen {
             }
         }
         for e in self.enemies.iter_mut() {
-            e.update(self.player_pos);
+            e.update(self.player_pos, self.cord_pos, &mut self.cord_health);
         }
         for p in self.projectiles.iter_mut() {
             p.update();
@@ -133,20 +137,22 @@ impl Screen for GameScreen {
         let point = window.mouse().pos() - self.player_pos.center();
         let rotation = point.angle();
         let scale = Vector::new(1.0, point.x.signum());
-        canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(), 
+        canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
                                 Transform::translate(Vector::newi(0, 10))
-                                * Transform::rotate(rotation) 
+                                * Transform::rotate(rotation)
                                 * double
                                 * Transform::scale(scale)
                                 * Transform::translate(Vector::newi(12, 0)));
         for e in self.enemies.iter() {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
-            canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double); 
+            canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
             canvas.draw_image_trans(image, e.pos.center(), Color::white(), double);
         }
         for p in self.projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
         }
+        canvas.draw_circle(self.cord_pos, Color::blue());
+        canvas.draw_rect(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0), Color::green());
         canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), double);
         canvas.present(window);
     }
