@@ -11,6 +11,7 @@ use quicksilver::*;
 
 mod enemy;
 use enemy::Enemy;
+use enemy::EnemyType;
 mod projectile;
 use projectile::Projectile;
 mod loading;

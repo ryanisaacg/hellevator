@@ -19,6 +19,7 @@ pub struct GameScreen {
     pub cord_pos: Circle,
     pub enemies: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
+    pub enemy_projectiles: Vec<Projectile>,
     pub player_image: Image,
     pub crosshair: Image,
     pub gun: Image,
@@ -40,10 +41,9 @@ impl GameScreen {
         GameScreen {
             player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
             cord_pos: Circle::newi(960/2, 540/2, 48),
-            enemies: vec![Enemy::new(Circle::newi(400, 400, PLAYER_RADIUS/2)),
-                               Enemy::new(Circle::newi(300, 400, PLAYER_RADIUS/2)),
-                               Enemy::new(Circle::newi(200, 250, PLAYER_RADIUS/2))],
+            enemies: Vec::new(),
             projectiles: Vec::new(),
+            enemy_projectiles: Vec::new(),
             player_image: load.player_image,
             crosshair: load.crosshair,
             gun: load.gun,
@@ -81,13 +81,17 @@ impl Screen for GameScreen {
         }
         if window.mouse().right().is_down() {
             for p in self.projectiles.iter_mut() {
-                p.vel = (window.mouse().pos() - p.pos.center()).normalize() * 5;
+                let mut rng = rand::thread_rng();
+                p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-15.0, 15.0), rng.gen_range(-15.0, 15.0)) - p.pos.center()).normalize() * 5;
             }
         }
         for e in self.enemies.iter_mut() {
-            e.update(self.player_pos, self.cord_pos, &mut self.cord_health);
+            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.enemy_projectiles);
         }
         for p in self.projectiles.iter_mut() {
+            p.update();
+        }
+        for p in self.enemy_projectiles.iter_mut() {
             p.update();
         }
         for p in self.projectiles.iter_mut() {
@@ -96,6 +100,12 @@ impl Screen for GameScreen {
                     e.remove = true;
                     p.remove = true;
                 }
+            }
+        }
+        for p in self.enemy_projectiles.iter_mut() {
+            if p.pos.overlaps_circ(self.player_pos) {
+                p.remove = true;
+                //TODO Player dies here
             }
         }
         let mut i = 0;
@@ -115,11 +125,19 @@ impl Screen for GameScreen {
                 i += 1;
             }
         }
+        i = 0;
+        while i < self.enemy_projectiles.len() {
+            if self.enemy_projectiles[i].remove {
+                self.enemy_projectiles.remove(i);
+            } else {
+                i += 1;
+            }
+        }
         while self.enemies.len() < 4 {
             let mut rng = rand::thread_rng();
             let x: i32 = if rng.gen() { rng.gen_range(0, 960) } else { 0 };
             let y: i32 = if x == 0 { rng.gen_range(0, 540) } else { 0 };
-            self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2)));
+            self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2), if rng.gen() { EnemyType::Bat } else { EnemyType::Gunner }));
         }
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
@@ -152,9 +170,21 @@ impl Screen for GameScreen {
         for e in self.enemies.iter() {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
-            canvas.draw_image_trans(image, e.pos.center(), Color::white(), double);
+            match e.enemy_type {
+                EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
+                EnemyType::Gunner => canvas.draw_circle(e.pos, Color::red())
+            }
+
+            // if e.enemy_type == EnemyType::Bat {
+            //     canvas.draw_image_trans(image, e.pos.center(), Color::white(), double);
+            // } else {
+            //     canvas.draw_circle(e.pos, Color::red());
+            // }
         }
         for p in self.projectiles.iter() {
+            canvas.draw_circle(p.pos, Color::yellow());
+        }
+        for p in self.enemy_projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
         }
         canvas.draw_circle(self.cord_pos, Color::blue());
