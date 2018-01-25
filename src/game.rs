@@ -13,6 +13,7 @@ pub struct LoadResults {
     pub death: Sound
 }
 
+const MAX_ADRENALINE: f32 = 100.0;
 
 pub struct GameScreen {
     pub player_pos: Circle,
@@ -33,6 +34,7 @@ pub struct GameScreen {
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
+    pub adrenaline: f32,
     pub cord_health: f32
 }
 
@@ -57,6 +59,7 @@ impl GameScreen {
             fire: load.fire,
             wall_scroll: 0.0,
             shoot_cooldown: 0,
+            adrenaline: 0.0,
             cord_health: CORD_HEALTH
         }
     }
@@ -73,8 +76,9 @@ impl Screen for GameScreen {
             let mut rng = rand::thread_rng();
             self.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32),
-                    Transform::rotate(rng.gen_range(-10.0, 10.0)) * (window.mouse().pos() - self.player_pos.center()).normalize() * 5));
-            self.shoot_cooldown = 10;
+                    Transform::rotate(rng.gen_range(-15.0 * self.adrenaline / MAX_ADRENALINE - 5.0,
+                    15.0 * self.adrenaline / MAX_ADRENALINE + 5.0)) * (window.mouse().pos() - self.player_pos.center()).normalize() * 5));
+            self.shoot_cooldown = 10 - (4.0 * self.adrenaline / MAX_ADRENALINE) as i32;
         }
         if self.shoot_cooldown > 0 {
             self.shoot_cooldown -= 1;
@@ -82,7 +86,8 @@ impl Screen for GameScreen {
         if window.mouse().right().is_down() {
             for p in self.projectiles.iter_mut() {
                 let mut rng = rand::thread_rng();
-                p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-15.0, 15.0), rng.gen_range(-15.0, 15.0)) - p.pos.center()).normalize() * 5;
+                p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-20.0 * self.adrenaline / MAX_ADRENALINE - 10.0, 20.0 * self.adrenaline / MAX_ADRENALINE + 10.0),
+                        rng.gen_range(-20.0 * self.adrenaline / MAX_ADRENALINE - 10.0, 20.0 * self.adrenaline / MAX_ADRENALINE + 10.0)) - p.pos.center()).normalize() * 5;
             }
         }
         for e in self.enemies.iter_mut() {
@@ -99,6 +104,7 @@ impl Screen for GameScreen {
                 if p.pos.overlaps_circ(e.pos) {
                     e.remove = true;
                     p.remove = true;
+                    self.adrenaline += 2.0;
                 }
             }
         }
@@ -138,6 +144,12 @@ impl Screen for GameScreen {
             let x: i32 = if rng.gen() { rng.gen_range(0, 960) } else { 0 };
             let y: i32 = if x == 0 { rng.gen_range(0, 540) } else { 0 };
             self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2), if rng.gen() { EnemyType::Bat } else { EnemyType::Gunner }));
+        }
+        self.adrenaline -= 0.005;
+        if self.adrenaline < 0.0 {
+            self.adrenaline = 0.0;
+        } else if self.adrenaline > MAX_ADRENALINE {
+            self.adrenaline = MAX_ADRENALINE;
         }
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
@@ -189,6 +201,7 @@ impl Screen for GameScreen {
         }
         canvas.draw_circle(self.cord_pos, Color::blue());
         canvas.draw_rect(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0), Color::green());
+        canvas.draw_rect(Rectangle::new(960.0/2.0-100.0, 35.0, 200.0 * self.adrenaline / MAX_ADRENALINE, 15.0), Color::blue());
         canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), double);
         canvas.present(window);
     }
