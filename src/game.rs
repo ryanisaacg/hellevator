@@ -34,6 +34,7 @@ pub struct GameScreen {
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
+    pub combat_roll: i32,
     pub adrenaline: f32,
     pub cord_health: f32
 }
@@ -59,6 +60,7 @@ impl GameScreen {
             fire: load.fire,
             wall_scroll: 0.0,
             shoot_cooldown: 0,
+            combat_roll: 0,
             adrenaline: 0.0,
             cord_health: CORD_HEALTH
         }
@@ -68,10 +70,16 @@ impl GameScreen {
 impl Screen for GameScreen {
     fn update(&mut self, window: &mut Window, _canvas: &mut Canvas) -> Option<Box<Screen>> {
         let keyboard = window.keyboard();
-        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
-        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
+        if self.combat_roll > 0 {
+            self.combat_roll -= 1;
+        }
+        if keyboard[Key::Space].is_down() {
+            self.combat_roll = 15;
+        }
+        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
+        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
+        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
+        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
         if window.mouse().left().is_down() && self.shoot_cooldown <= 0 {
             let mut rng = rand::thread_rng();
             self.fire.play();
@@ -109,7 +117,7 @@ impl Screen for GameScreen {
             }
         }
         for p in self.enemy_projectiles.iter_mut() {
-            if p.pos.overlaps_circ(self.player_pos) {
+            if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
                 p.remove = true;
                 //TODO Player dies here
             }
@@ -168,7 +176,9 @@ impl Screen for GameScreen {
         }
         //Draw the player
         canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
-        canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(), double);
+        canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(),
+                                Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
+                                * double);
         //Draw the player's weapon
         let point = window.mouse().pos() - self.player_pos.center();
         let rotation = point.angle();
@@ -186,12 +196,6 @@ impl Screen for GameScreen {
                 EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
                 EnemyType::Gunner(_) => canvas.draw_circle(e.pos, Color::red())
             }
-
-            // if e.enemy_type == EnemyType::Bat {
-            //     canvas.draw_image_trans(image, e.pos.center(), Color::white(), double);
-            // } else {
-            //     canvas.draw_circle(e.pos, Color::red());
-            // }
         }
         for p in self.projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
