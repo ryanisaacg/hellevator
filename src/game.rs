@@ -80,6 +80,10 @@ impl Screen for GameScreen {
         self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
         self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
         self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
+        if keyboard[Key::LShift].is_down() && !keyboard[Key::D].is_down() && !keyboard[Key::W].is_down() && !keyboard[Key::A].is_down() && !keyboard[Key::S].is_down() &&
+                self.player_pos.overlaps_circ(self.cord_pos) {
+            self.cord_health += 0.05 - 0.03 * self.adrenaline / MAX_ADRENALINE;
+        }
         if window.mouse().left().is_down() && self.shoot_cooldown <= 0 {
             let mut rng = rand::thread_rng();
             self.fire.play();
