@@ -2,7 +2,7 @@ use super::*;
 
 pub enum EnemyType {
     Bat,
-    Gunner
+    Gunner(i32)
 }
 
 pub struct Enemy {
@@ -26,11 +26,17 @@ impl Enemy {
                     *cord_health -= 10.0;
                 }
             },
-            EnemyType::Gunner => {
+            EnemyType::Gunner(ref mut shoot_cooldown) => {
+                if *shoot_cooldown > 0 {
+                    *shoot_cooldown -= 1;
+                }
                 if (self.pos.center() - player.center()).len2() > 500.0*500.0 {
                     self.pos = self.pos.translate((player.center() - self.pos.center()).normalize());
                 } else {
-                    enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
+                    if *shoot_cooldown <= 0 {
+                        enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
+                        *shoot_cooldown = 15;
+                    }
                 }
             }
         }

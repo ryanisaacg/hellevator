@@ -143,7 +143,7 @@ impl Screen for GameScreen {
             let mut rng = rand::thread_rng();
             let x: i32 = if rng.gen() { rng.gen_range(0, 960) } else { 0 };
             let y: i32 = if x == 0 { rng.gen_range(0, 540) } else { 0 };
-            self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2), if rng.gen() { EnemyType::Bat } else { EnemyType::Gunner }));
+            self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2), if rng.gen() { EnemyType::Bat } else { EnemyType::Gunner(0) }));
         }
         self.adrenaline -= 0.005;
         if self.adrenaline < 0.0 {
@@ -184,7 +184,7 @@ impl Screen for GameScreen {
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
             match e.enemy_type {
                 EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
-                EnemyType::Gunner => canvas.draw_circle(e.pos, Color::red())
+                EnemyType::Gunner(_) => canvas.draw_circle(e.pos, Color::red())
             }
 
             // if e.enemy_type == EnemyType::Bat {
