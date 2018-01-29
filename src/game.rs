@@ -13,8 +13,6 @@ pub struct LoadResults {
     pub death: Sound
 }
 
-const MAX_ADRENALINE: f32 = 100.0;
-
 pub struct GameScreen {
     pub player_pos: Circle,
     pub cord_pos: Circle,
@@ -67,6 +65,21 @@ impl GameScreen {
     }
 }
 
+const MAX_ADRENALINE: f32 = 100.0; //Internal 100% adrenaline
+const COMBAT_ROLL: i32 = 15; //Duration in ticks of combat roll
+const COMBAT_ROLL_SPEED_FACTOR: f32 = 1.75; //Factor by which speed is multiplied during combat roll
+const MIN_REPAIR_SPEED: f32 = 0.02; //Repair speed at maximum adrenaline
+const MAX_REPAIR_SPEED: f32 = 0.05; //Repair speed at minimum adrenaline
+const MIN_GUN_SPREAD: f32 = 5.0; //Angle of deviation of firing at minimum adrenaline
+const MAX_GUN_SPREAD: f32 = 20.0; //Angle of deviation of firing at maximum adrenaline
+const PLAYER_BULLET_SPEED: f32 = 5.0; //Velocity of player bullets
+const MAX_SHOOT_COOLDOWN: i32 = 10; //Duration in ticks between shots at minimum adrenaline
+const MIN_SHOOT_COOLDOWN: i32 = 6; //Duration in ticks between shots at maximum adrenaline
+const REDIRECT_MIN_RANGE: f32 = 10.0; //Square radius of inaccuracy of right click at minimum adrenaline
+const REDIRECT_MAX_RANGE: f32 = 30.0; //Square radius of inaccuracy of right click at maximum adrenaline
+const ADRENALINE_GAIN: f32 = 2.0; //Amount of adrenaline gained for each hit
+const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per tick
+
 impl Screen for GameScreen {
     fn update(&mut self, window: &mut Window, _canvas: &mut Canvas) -> Option<Box<Screen>> {
         let keyboard = window.keyboard();
@@ -74,23 +87,24 @@ impl Screen for GameScreen {
             self.combat_roll -= 1;
         }
         if keyboard[Key::Space].is_down() {
-            self.combat_roll = 15;
+            self.combat_roll = COMBAT_ROLL;
         }
-        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
-        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { 1.75 } else { 1.0 } } else { 0.0 };
+        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
+        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
+        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
+        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
         if keyboard[Key::LShift].is_down() && !keyboard[Key::D].is_down() && !keyboard[Key::W].is_down() && !keyboard[Key::A].is_down() && !keyboard[Key::S].is_down() &&
                 self.player_pos.overlaps_circ(self.cord_pos) {
-            self.cord_health += 0.05 - 0.03 * self.adrenaline / MAX_ADRENALINE;
+            self.cord_health += MAX_REPAIR_SPEED - (MAX_REPAIR_SPEED - MIN_REPAIR_SPEED) * self.adrenaline / MAX_ADRENALINE;
         }
         if window.mouse().left().is_down() && self.shoot_cooldown <= 0 {
             let mut rng = rand::thread_rng();
             self.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32),
-                    Transform::rotate(rng.gen_range(-15.0 * self.adrenaline / MAX_ADRENALINE - 5.0,
-                    15.0 * self.adrenaline / MAX_ADRENALINE + 5.0)) * (window.mouse().pos() - self.player_pos.center()).normalize() * 5));
-            self.shoot_cooldown = 10 - (4.0 * self.adrenaline / MAX_ADRENALINE) as i32;
+                    Transform::rotate(rng.gen_range(-(MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE - MIN_GUN_SPREAD,
+                    (MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE + MIN_GUN_SPREAD))
+                    * (window.mouse().pos() - self.player_pos.center()).normalize() * PLAYER_BULLET_SPEED));
+            self.shoot_cooldown = MAX_SHOOT_COOLDOWN - ((MAX_SHOOT_COOLDOWN - MIN_SHOOT_COOLDOWN) as f32 * self.adrenaline / MAX_ADRENALINE) as i32;
         }
         if self.shoot_cooldown > 0 {
             self.shoot_cooldown -= 1;
@@ -98,8 +112,10 @@ impl Screen for GameScreen {
         if window.mouse().right().is_down() {
             for p in self.projectiles.iter_mut() {
                 let mut rng = rand::thread_rng();
-                p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-20.0 * self.adrenaline / MAX_ADRENALINE - 10.0, 20.0 * self.adrenaline / MAX_ADRENALINE + 10.0),
-                        rng.gen_range(-20.0 * self.adrenaline / MAX_ADRENALINE - 10.0, 20.0 * self.adrenaline / MAX_ADRENALINE + 10.0)) - p.pos.center()).normalize() * 5;
+                p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-(REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE - REDIRECT_MIN_RANGE,
+                        (REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE + REDIRECT_MIN_RANGE),
+                        rng.gen_range(-(REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE - REDIRECT_MIN_RANGE,
+                        (REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE + REDIRECT_MIN_RANGE)) - p.pos.center()).normalize() * PLAYER_BULLET_SPEED;
             }
         }
         for e in self.enemies.iter_mut() {
@@ -116,7 +132,7 @@ impl Screen for GameScreen {
                 if p.pos.overlaps_circ(e.pos) {
                     e.remove = true;
                     p.remove = true;
-                    self.adrenaline += 2.0;
+                    self.adrenaline += ADRENALINE_GAIN;
                 }
             }
         }
@@ -157,7 +173,7 @@ impl Screen for GameScreen {
             let y: i32 = if x == 0 { rng.gen_range(0, 540) } else { 0 };
             self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2), if rng.gen() { EnemyType::Bat } else { EnemyType::Gunner(0) }));
         }
-        self.adrenaline -= 0.005;
+        self.adrenaline -= ADRENALINE_DRAIN;
         if self.adrenaline < 0.0 {
             self.adrenaline = 0.0;
         } else if self.adrenaline > MAX_ADRENALINE {
