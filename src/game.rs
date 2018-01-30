@@ -14,6 +14,7 @@ pub struct LoadResults {
 }
 
 pub struct GameScreen {
+    pub player_down: Option<Circle>,
     pub player_pos: Circle,
     pub cord_pos: Circle,
     pub enemies: Vec<Enemy>,
@@ -40,6 +41,7 @@ pub struct GameScreen {
 impl GameScreen {
     pub fn new(load: LoadResults) -> GameScreen {
         GameScreen {
+            player_down: Option::None,
             player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
             cord_pos: Circle::newi(960/2, 540/2, 48),
             enemies: Vec::new(),
@@ -97,7 +99,7 @@ impl Screen for GameScreen {
                 self.player_pos.overlaps_circ(self.cord_pos) {
             self.cord_health += MAX_REPAIR_SPEED - (MAX_REPAIR_SPEED - MIN_REPAIR_SPEED) * self.adrenaline / MAX_ADRENALINE;
         }
-        if window.mouse().left().is_down() && self.shoot_cooldown <= 0 {
+        if window.mouse().left().is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
             let mut rng = rand::thread_rng();
             self.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32),
@@ -109,7 +111,7 @@ impl Screen for GameScreen {
         if self.shoot_cooldown > 0 {
             self.shoot_cooldown -= 1;
         }
-        if window.mouse().right().is_down() {
+        if window.mouse().right().is_down() && self.player_down == Option::None {
             for p in self.projectiles.iter_mut() {
                 let mut rng = rand::thread_rng();
                 p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-(REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE - REDIRECT_MIN_RANGE,
@@ -136,10 +138,20 @@ impl Screen for GameScreen {
                 }
             }
         }
-        for p in self.enemy_projectiles.iter_mut() {
-            if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
-                p.remove = true;
-                //TODO Player dies here
+        if self.player_down == Option::None {
+            for p in self.enemy_projectiles.iter_mut() {
+                if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
+                    let mut rng = rand::thread_rng();
+                    p.remove = true;
+                    self.player_down = Option::Some(self.player_pos);
+                    self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
+                }
+            }
+        }
+        if let Some(player_down) = self.player_down {
+            if player_down.overlaps_circ(self.player_pos) {
+                self.player_pos = player_down;
+                self.player_down = Option::None;
             }
         }
         let mut i = 0;
@@ -195,20 +207,32 @@ impl Screen for GameScreen {
             }
         }
         //Draw the player
-        canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
-        canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(),
-                                Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
-                                * double);
-        //Draw the player's weapon
-        let point = window.mouse().pos() - self.player_pos.center();
-        let rotation = point.angle();
-        let scale = Vector::new(1.0, point.x.signum());
-        canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
-                                Transform::translate(Vector::newi(0, 10))
-                                * Transform::rotate(rotation)
-                                * double
-                                * Transform::scale(scale)
-                                * Transform::translate(Vector::newi(12, 0)));
+        match self.player_down {
+            Option::Some(player_down) => {
+                canvas.draw_image_trans(&self.shadow, player_down.center() + Vector::y() * 24, Color::white(), double);
+                canvas.draw_image_trans(&self.player_image, player_down.center(), Color::white(),
+                                        Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
+                                        * double);
+                canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
+                canvas.draw_circle(self.player_pos, Color::green());
+            },
+            Option::None => {
+                canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
+                canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(),
+                                        Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
+                                        * double);
+                //Draw the player's weapon
+                let point = window.mouse().pos() - self.player_pos.center();
+                let rotation = point.angle();
+                let scale = Vector::new(1.0, point.x.signum());
+                canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
+                                        Transform::translate(Vector::newi(0, 10))
+                                        * Transform::rotate(rotation)
+                                        * double
+                                        * Transform::scale(scale)
+                                        * Transform::translate(Vector::newi(12, 0)));
+            }
+        }
         for e in self.enemies.iter() {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
