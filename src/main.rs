@@ -9,6 +9,8 @@ use quicksilver::input::*;
 use quicksilver::sound::*;
 use quicksilver::*;
 
+use rand::Rng;
+
 mod enemy;
 use enemy::Enemy;
 use enemy::EnemyType;
