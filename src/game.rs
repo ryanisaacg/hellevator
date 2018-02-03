@@ -8,6 +8,7 @@ pub struct LoadResults {
     pub shadow: Image,
     pub wall: Image,
     pub bat: Image,
+    pub medic: Image,
     pub fire: Sound,
     pub death: Sound
 }
@@ -28,6 +29,7 @@ pub struct GameScreen {
     pub fire: Sound,
     pub bat_up: Image,
     pub bat_down: Image,
+    pub medic: Image,
     pub death: Sound,
     pub bat_frame: u32,
     pub wall_scroll: f32,
@@ -41,8 +43,8 @@ impl GameScreen {
     pub fn new(load: LoadResults) -> GameScreen {
         GameScreen {
             player_down: Option::None,
-            player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
-            cord_pos: Circle::newi(960/2, 540/2, 48),
+            player_pos: Circle::new(100, 100, PLAYER_RADIUS),
+            cord_pos: Circle::new(960/2, 540/2, 48),
             enemies: Vec::new(),
             projectiles: Vec::new(),
             enemy_projectiles: Vec::new(),
@@ -52,8 +54,9 @@ impl GameScreen {
             wood: load.wood,
             shadow: load.shadow,
             wall: load.wall,
-            bat_up: load.bat.subimage(Rectangle::newi(0, 0, 16, 16)),
-            bat_down: load.bat.subimage(Rectangle::newi(16, 0, 16, 16)),
+            medic: load.medic,
+            bat_up: load.bat.subimage(Rectangle::new(0, 0, 16, 16)),
+            bat_down: load.bat.subimage(Rectangle::new(16, 0, 16, 16)),
             death: load.death,
             bat_frame: 0,
             fire: load.fire,
@@ -194,7 +197,7 @@ impl Screen for GameScreen {
 
     fn draw(&mut self, window: &mut Window, canvas: &mut Canvas) {
         canvas.clear(Color::black());
-        let double = Transform::scale(Vector::newi(2, 2));
+        let double = Transform::scale(Vector::new(2, 2));
         for x in 0..30 {
             for y in 0..17 {
                 let image = if y < 2 { &self.wall } else { &self.wood };
@@ -210,7 +213,7 @@ impl Screen for GameScreen {
                                         Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
                                         * double);
                 canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
-                canvas.draw_circle(self.player_pos, Color::green());
+                canvas.draw_image_trans(&self.medic, self.player_pos.center(), Color::white(), double);
             },
             Option::None => {
                 canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
@@ -222,11 +225,11 @@ impl Screen for GameScreen {
                 let rotation = point.angle();
                 let scale = Vector::new(1.0, point.x.signum());
                 canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
-                                        Transform::translate(Vector::newi(0, 10))
+                                        Transform::translate(Vector::new(0, 10))
                                         * Transform::rotate(rotation)
                                         * double
                                         * Transform::scale(scale)
-                                        * Transform::translate(Vector::newi(12, 0)));
+                                        * Transform::translate(Vector::new(12, 0)));
             }
         }
         for e in self.enemies.iter() {
