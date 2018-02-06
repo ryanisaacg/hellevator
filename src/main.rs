@@ -21,8 +21,8 @@ use loading::LoadingScreen;
 mod game;
 use game::*;
 
-const PLAYER_RADIUS: i32 = 24;
-const PLAYER_SPEED: f32 = 5.0;
-const CORD_HEALTH: f32 = 1000.0;
+const PLAYER_RADIUS: i32 = 24; //Size of the player
+const PLAYER_SPEED: f32 = 5.0; //Speed of the player
+const CORD_HEALTH: f32 = 1000.0; //Max health of the cord
 
 screens_loop!(LoadingScreen);

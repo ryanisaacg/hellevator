@@ -50,7 +50,7 @@ impl Enemy {
                 } else {
                     if *shoot_cooldown <= 0 {
                         enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
-                        *shoot_cooldown = 15;
+                        *shoot_cooldown = 250;
                     }
                 }
             }
