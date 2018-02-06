@@ -36,6 +36,7 @@ pub struct GameScreen {
     pub shoot_cooldown: i32,
     pub combat_roll: i32,
     pub adrenaline: f32,
+    pub elevation: i32,
     pub cord_health: f32
 }
 
@@ -64,6 +65,7 @@ impl GameScreen {
             shoot_cooldown: 0,
             combat_roll: 0,
             adrenaline: 0.0,
+            elevation: 0,
             cord_health: CORD_HEALTH
         }
     }
@@ -181,7 +183,10 @@ impl Screen for GameScreen {
                 i += 1;
             }
         }
-        while self.enemies.len() < 4 {
+        //Enemies by elevation function:
+        //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
+        self.elevation += 1;
+        while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
             self.enemies.push(Enemy::gen_new());
         }
         self.adrenaline -= ADRENALINE_DRAIN;
