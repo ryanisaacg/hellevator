@@ -1,8 +1,11 @@
 #[macro_use]
+extern crate futures;
 extern crate quicksilver;
 extern crate rand;
 
-use quicksilver::asset::*;
+use futures::{Async, Future};
+use futures::future::{JoinAll, join_all};
+
 use quicksilver::geom::*;
 use quicksilver::graphics::*;
 use quicksilver::input::*;

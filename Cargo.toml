@@ -4,5 +4,6 @@ version = "0.1.0"
 authors = ["Ryan Goldstein <ryanisaacg@gmail.com>"]
 
 [dependencies]
+futures = "*"
 quicksilver = { git = "https://github.com/ryanisaacg/quicksilver" }
 rand = "*"
