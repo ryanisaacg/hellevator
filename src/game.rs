@@ -104,7 +104,7 @@ impl Screen for GameScreen {
         if window.mouse().left().is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
             let mut rng = rand::thread_rng();
             self.fire.play();
-            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32),
+            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/4) as f32),
                     Transform::rotate(rng.gen_range(-(MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE - MIN_GUN_SPREAD,
                     (MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE + MIN_GUN_SPREAD))
                     * (window.mouse().pos() - self.player_pos.center()).normalize() * PLAYER_BULLET_SPEED));
@@ -236,6 +236,8 @@ impl Screen for GameScreen {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
             match e.enemy_type {
+                EnemyType::AngrySpider(_) => canvas.draw_circle(e.pos, Color::red()),
+                EnemyType::Spider(_) => canvas.draw_circle(e.pos, Color::black()),
                 EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
                 EnemyType::Gunner(_) => canvas.draw_circle(e.pos, Color::red())
             }
