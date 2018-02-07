@@ -1,5 +1,4 @@
 use super::*;
-use rand::Rng;
 
 pub struct LoadResults {
     pub player_image: Image,
@@ -9,6 +8,7 @@ pub struct LoadResults {
     pub shadow: Image,
     pub wall: Image,
     pub bat: Image,
+    pub medic: Image,
     pub fire: Sound,
     pub death: Sound
 }
@@ -29,12 +29,14 @@ pub struct GameScreen {
     pub fire: Sound,
     pub bat_up: Image,
     pub bat_down: Image,
+    pub medic: Image,
     pub death: Sound,
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
     pub combat_roll: i32,
     pub adrenaline: f32,
+    pub elevation: i32,
     pub cord_health: f32
 }
 
@@ -42,8 +44,8 @@ impl GameScreen {
     pub fn new(load: LoadResults) -> GameScreen {
         GameScreen {
             player_down: Option::None,
-            player_pos: Circle::newi(100, 100, PLAYER_RADIUS),
-            cord_pos: Circle::newi(960/2, 540/2, 48),
+            player_pos: Circle::new(100, 100, PLAYER_RADIUS),
+            cord_pos: Circle::new(960/2, 540/2, 48),
             enemies: Vec::new(),
             projectiles: Vec::new(),
             enemy_projectiles: Vec::new(),
@@ -53,8 +55,9 @@ impl GameScreen {
             wood: load.wood,
             shadow: load.shadow,
             wall: load.wall,
-            bat_up: load.bat.subimage(Rectangle::newi(0, 0, 16, 16)),
-            bat_down: load.bat.subimage(Rectangle::newi(16, 0, 16, 16)),
+            medic: load.medic,
+            bat_up: load.bat.subimage(Rectangle::new(0, 0, 16, 16)),
+            bat_down: load.bat.subimage(Rectangle::new(16, 0, 16, 16)),
             death: load.death,
             bat_frame: 0,
             fire: load.fire,
@@ -62,6 +65,7 @@ impl GameScreen {
             shoot_cooldown: 0,
             combat_roll: 0,
             adrenaline: 0.0,
+            elevation: 0,
             cord_health: CORD_HEALTH
         }
     }
@@ -74,7 +78,7 @@ const MIN_REPAIR_SPEED: f32 = 0.02; //Repair speed at maximum adrenaline
 const MAX_REPAIR_SPEED: f32 = 0.05; //Repair speed at minimum adrenaline
 const MIN_GUN_SPREAD: f32 = 5.0; //Angle of deviation of firing at minimum adrenaline
 const MAX_GUN_SPREAD: f32 = 20.0; //Angle of deviation of firing at maximum adrenaline
-const PLAYER_BULLET_SPEED: f32 = 5.0; //Velocity of player bullets
+const PLAYER_BULLET_SPEED: f32 = 15.0; //Velocity of player bullets
 const MAX_SHOOT_COOLDOWN: i32 = 10; //Duration in ticks between shots at minimum adrenaline
 const MIN_SHOOT_COOLDOWN: i32 = 6; //Duration in ticks between shots at maximum adrenaline
 const REDIRECT_MIN_RANGE: f32 = 10.0; //Square radius of inaccuracy of right click at minimum adrenaline
@@ -102,7 +106,7 @@ impl Screen for GameScreen {
         if window.mouse().left().is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
             let mut rng = rand::thread_rng();
             self.fire.play();
-            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/8) as f32),
+            self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/4) as f32),
                     Transform::rotate(rng.gen_range(-(MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE - MIN_GUN_SPREAD,
                     (MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE + MIN_GUN_SPREAD))
                     * (window.mouse().pos() - self.player_pos.center()).normalize() * PLAYER_BULLET_SPEED));
@@ -158,11 +162,11 @@ impl Screen for GameScreen {
         clean_list(&mut self.enemies, || death.play());
         clean_list(&mut self.projectiles, ||());
         clean_list(&mut self.enemy_projectiles, ||());
-        while self.enemies.len() < 4 {
-            let mut rng = rand::thread_rng();
-            let x: i32 = if rng.gen() { rng.gen_range(0, 960) } else { 0 };
-            let y: i32 = if x == 0 { rng.gen_range(0, 540) } else { 0 };
-            self.enemies.push(Enemy::new(Circle::newi(x, y, PLAYER_RADIUS/2), if rng.gen() { EnemyType::Bat } else { EnemyType::Gunner(0) }));
+        //Enemies by elevation function:
+        //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
+        self.elevation += 1;
+        while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
+            self.enemies.push(Enemy::gen_new());
         }
         self.adrenaline -= ADRENALINE_DRAIN;
         if self.adrenaline < 0.0 {
@@ -177,7 +181,7 @@ impl Screen for GameScreen {
 
     fn draw(&mut self, window: &mut Window, canvas: &mut Canvas) {
         canvas.clear(Color::black());
-        let double = Transform::scale(Vector::newi(2, 2));
+        let double = Transform::scale(Vector::new(2, 2));
         for x in 0..30 {
             for y in 0..17 {
                 let image = if y < 2 { &self.wall } else { &self.wood };
@@ -193,7 +197,7 @@ impl Screen for GameScreen {
                                         Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
                                         * double);
                 canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
-                canvas.draw_circle(self.player_pos, Color::green());
+                canvas.draw_image_trans(&self.medic, self.player_pos.center(), Color::white(), double);
             },
             Option::None => {
                 canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
@@ -205,17 +209,19 @@ impl Screen for GameScreen {
                 let rotation = point.angle();
                 let scale = Vector::new(1.0, point.x.signum());
                 canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
-                                        Transform::translate(Vector::newi(0, 10))
+                                        Transform::translate(Vector::new(0, 10))
                                         * Transform::rotate(rotation)
                                         * double
                                         * Transform::scale(scale)
-                                        * Transform::translate(Vector::newi(12, 0)));
+                                        * Transform::translate(Vector::new(12, 0)));
             }
         }
         for e in self.enemies.iter() {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
             match e.enemy_type {
+                EnemyType::AngrySpider(_) => canvas.draw_circle(e.pos, Color::red()),
+                EnemyType::Spider(_) => canvas.draw_circle(e.pos, Color::black()),
                 EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
                 EnemyType::Gunner(_) => canvas.draw_circle(e.pos, Color::red())
             }

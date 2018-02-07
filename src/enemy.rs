@@ -1,6 +1,9 @@
 use super::*;
 
+#[derive(Copy, Clone)]
 pub enum EnemyType {
+    AngrySpider(i32),
+    Spider(i32),
     Bat,
     Gunner(i32)
 }
@@ -16,8 +19,45 @@ impl Enemy {
         Enemy { pos, enemy_type, remove: false }
     }
 
+    pub fn gen_new() -> Enemy {
+        let mut rng = rand::thread_rng();
+        let mut pos = Circle::new(0.0, 0.0, 9999999.0);
+        while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
+            pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
+        }
+        let types: Vec<EnemyType> = vec![/*EnemyType::Bat, EnemyType::Gunner(0)*/ EnemyType::Spider(0), EnemyType::AngrySpider(0)];
+        if let Some(enemy_type) = rng.choose(&types) {
+            Enemy { pos, enemy_type: *enemy_type, remove: false }
+        } else {
+            Enemy { pos, enemy_type: EnemyType::Bat, remove: false }
+        }
+    }
+
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, enemy_projectiles: &mut Vec<Projectile>) {
         match self.enemy_type {
+            EnemyType::AngrySpider(ref mut jump_cycle) => {
+                *jump_cycle = (*jump_cycle + 1) % 90;
+                if *jump_cycle > 74 {
+                    let mut rng = rand::thread_rng();
+                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize() * (90 - *jump_cycle) / 2);
+                }
+                if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 150.0*150.0 {
+                    enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
+                }
+            },
+            EnemyType::Spider(ref mut jump_cycle) => {
+                *jump_cycle = (*jump_cycle + 1) % 60;
+                if *jump_cycle > 44 {
+                    let mut rng = rand::thread_rng();
+                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (cord_pos.center() - self.pos.center()).normalize() * (60 - *jump_cycle) / 2);
+                }
+                if self.pos.overlaps_circ(cord_pos) {
+                    self.remove = true;
+                    *cord_health -= 10.0;
+                }
+            },
+
+            // LEGACY EXAMPLES
             EnemyType::Bat => {
                 self.pos = self.pos.translate((cord_pos.center() - self.pos.center()).normalize() * 2);
 
@@ -35,7 +75,7 @@ impl Enemy {
                 } else {
                     if *shoot_cooldown <= 0 {
                         enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
-                        *shoot_cooldown = 15;
+                        *shoot_cooldown = 250;
                     }
                 }
             }
