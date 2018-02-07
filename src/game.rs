@@ -18,6 +18,7 @@ pub struct GameScreen {
     pub player_pos: Circle,
     pub cord_pos: Circle,
     pub enemies: Vec<Enemy>,
+    pub enemy_buffer: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
     pub enemy_projectiles: Vec<Projectile>,
     pub player_image: Image,
@@ -47,6 +48,7 @@ impl GameScreen {
             player_pos: Circle::new(100, 100, PLAYER_RADIUS),
             cord_pos: Circle::new(960/2, 540/2, 48),
             enemies: Vec::new(),
+            enemy_buffer: Vec::new(),
             projectiles: Vec::new(),
             enemy_projectiles: Vec::new(),
             player_image: load.player_image,
@@ -125,8 +127,9 @@ impl Screen for GameScreen {
             }
         }
         for e in self.enemies.iter_mut() {
-            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.enemy_projectiles);
+            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.enemy_projectiles, &mut self.enemy_buffer);
         }
+        self.enemies.append(&mut self.enemy_buffer);
         for p in self.projectiles.iter_mut() {
             p.update();
         }
@@ -220,6 +223,7 @@ impl Screen for GameScreen {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * 24, Color::white(), double);
             match e.enemy_type {
+                EnemyType::MamaSpider(_, _) => canvas.draw_circle(e.pos, Color::purple()),
                 EnemyType::AngrySpider(_) => canvas.draw_circle(e.pos, Color::red()),
                 EnemyType::Spider(_) => canvas.draw_circle(e.pos, Color::black()),
                 EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
@@ -252,4 +256,3 @@ fn clean_list<T: Killable, F: Fn()>(list: &mut Vec<T>, on_death: F) {
         }
     }
 }
-

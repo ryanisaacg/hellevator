@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Copy, Clone)]
 pub enum EnemyType {
+    MamaSpider(i32, Vector),
     AngrySpider(i32),
     Spider(i32),
     Bat,
@@ -25,7 +26,7 @@ impl Enemy {
         while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
             pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
         }
-        let types: Vec<EnemyType> = vec![/*EnemyType::Bat, EnemyType::Gunner(0)*/ EnemyType::Spider(0), EnemyType::AngrySpider(0)];
+        let types = [/*EnemyType::Bat, EnemyType::Gunner(0)*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero())];
         if let Some(enemy_type) = rng.choose(&types) {
             Enemy { pos, enemy_type: *enemy_type, remove: false }
         } else {
@@ -33,8 +34,23 @@ impl Enemy {
         }
     }
 
-    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, enemy_projectiles: &mut Vec<Projectile>) {
+    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, enemy_projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) {
         match self.enemy_type {
+            EnemyType::MamaSpider(ref mut jump_cycle, ref mut jump_direction) => {
+                let mut rng = rand::thread_rng();
+                *jump_cycle = (*jump_cycle + 1) % 150;
+                if *jump_cycle == 134 {
+                    *jump_direction = (rng.gen::<Vector>() - Vector::one() * 0.5).normalize();
+                } else if *jump_cycle > 134 {
+                    self.pos = self.pos.translate(*jump_direction * (150 - *jump_cycle) / 2);
+                }
+                if *jump_cycle >= 149 && rng.gen_range(0.0, 1.0) < 0.3 {
+                    let types = [EnemyType::Spider(0), EnemyType::AngrySpider(0)];
+                    if let Some(enemy_type) = rng.choose(&types) {
+                        enemy_buffer.push(Enemy { pos: self.pos, enemy_type: *enemy_type, remove: false } );
+                    }
+                }
+            },
             EnemyType::AngrySpider(ref mut jump_cycle) => {
                 *jump_cycle = (*jump_cycle + 1) % 90;
                 if *jump_cycle > 74 {
