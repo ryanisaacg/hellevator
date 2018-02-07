@@ -1,4 +1,4 @@
-use quicksilver::geom::*;
+use super::*;
 
 pub struct Projectile {
     pub pos: Circle,
@@ -16,5 +16,11 @@ impl Projectile {
         if self.pos.x < -100.0 || self.pos.x > 1100.0 || self.pos.y < -100.0 || self.pos.y > 1100.0 {
             self.remove = true;
         }
+    }
+}
+
+impl Killable for Projectile {
+    fn is_dead(&self) -> bool {
+        self.remove
     }
 }

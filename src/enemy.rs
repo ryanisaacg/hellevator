@@ -42,3 +42,9 @@ impl Enemy {
         }
     }
 }
+
+impl Killable for Enemy {
+    fn is_dead(&self) -> bool {
+        self.remove
+    }
+}

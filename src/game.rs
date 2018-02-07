@@ -154,31 +154,10 @@ impl Screen for GameScreen {
                 self.player_down = Option::None;
             }
         }
-        let mut i = 0;
-        while i < self.enemies.len() {
-            if self.enemies[i].remove {
-                self.enemies.remove(i);
-                self.death.play();
-            } else {
-                i += 1;
-            }
-        }
-        i = 0;
-        while i < self.projectiles.len() {
-            if self.projectiles[i].remove {
-                self.projectiles.remove(i);
-            } else {
-                i += 1;
-            }
-        }
-        i = 0;
-        while i < self.enemy_projectiles.len() {
-            if self.enemy_projectiles[i].remove {
-                self.enemy_projectiles.remove(i);
-            } else {
-                i += 1;
-            }
-        }
+        let death = self.death.clone();
+        clean_list(&mut self.enemies, || death.play());
+        clean_list(&mut self.projectiles, ||());
+        clean_list(&mut self.enemy_projectiles, ||());
         while self.enemies.len() < 4 {
             let mut rng = rand::thread_rng();
             let x: i32 = if rng.gen() { rng.gen_range(0, 960) } else { 0 };
@@ -255,3 +234,16 @@ impl Screen for GameScreen {
     }
 
 }
+
+fn clean_list<T: Killable, F: Fn()>(list: &mut Vec<T>, on_death: F) {
+    let mut i = 0;
+    while i < list.len() {
+        if list[i].is_dead() {
+            list.remove(i);
+            on_death();
+        } else {
+            i += 1;
+        }
+    }
+}
+

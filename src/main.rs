@@ -23,4 +23,8 @@ const PLAYER_RADIUS: i32 = 24;
 const PLAYER_SPEED: f32 = 5.0;
 const CORD_HEALTH: f32 = 1000.0;
 
+trait Killable {
+    fn is_dead(&self) -> bool;
+}
+
 screens_loop!(LoadingScreen);
