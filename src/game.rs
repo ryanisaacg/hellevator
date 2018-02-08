@@ -10,6 +10,7 @@ pub struct LoadResults {
     pub bat: Image,
     pub medic: Image,
     pub spider: Image,
+    pub angry_spider: Image,
     pub fire: Sound,
     pub death: Sound
 }
@@ -33,6 +34,7 @@ pub struct GameScreen {
     pub bat_down: Image,
     pub medic: Image,
     pub spider: Image,
+    pub angry_spider: Image,
     pub death: Sound,
     pub bat_frame: u32,
     pub wall_scroll: f32,
@@ -65,6 +67,7 @@ impl GameScreen {
             death: load.death,
             bat_frame: 0,
             spider: load.spider,
+            angry_spider: load.angry_spider,
             fire: load.fire,
             wall_scroll: 0.0,
             shoot_cooldown: 0,
@@ -231,7 +234,7 @@ impl Screen for GameScreen {
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * shadow_offset, Color::white(), double);
             match e.enemy_type {
                 EnemyType::MamaSpider(_, _) => canvas.draw_circle(e.pos, Color::purple()),
-                EnemyType::AngrySpider(_) => canvas.draw_circle(e.pos, Color::red()),
+                EnemyType::AngrySpider(_) => canvas.draw_image_trans(&self.angry_spider, e.pos.center(), Color::white(), double),
                 EnemyType::Spider(_) => canvas.draw_image_trans(&self.spider, e.pos.center(), Color::white(), double),
                 EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
                 EnemyType::Gunner(_) => canvas.draw_circle(e.pos, Color::red())
