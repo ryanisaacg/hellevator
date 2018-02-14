@@ -11,6 +11,7 @@ pub struct LoadResults {
     pub medic: Image,
     pub spider: Image,
     pub angry_spider: Image,
+    pub gear: Image,
     pub fire: Sound,
     pub death: Sound
 }
@@ -34,6 +35,7 @@ pub struct GameScreen {
     pub medic: Image,
     pub spider: Image,
     pub angry_spider: Image,
+    pub gear: Image,
     pub death: Sound,
     pub bat_frame: u32,
     pub wall_scroll: f32,
@@ -42,7 +44,8 @@ pub struct GameScreen {
     pub adrenaline: f32,
     pub web_timer: i32,
     pub elevation: i32,
-    pub cord_health: f32
+    pub cord_health: f32,
+    pub gear_spin: f32
 }
 
 impl GameScreen {
@@ -67,6 +70,7 @@ impl GameScreen {
             bat_frame: 0,
             spider: load.spider,
             angry_spider: load.angry_spider,
+            gear: load.gear,
             fire: load.fire,
             wall_scroll: 0.0,
             shoot_cooldown: 0,
@@ -74,7 +78,8 @@ impl GameScreen {
             adrenaline: 0.0,
             web_timer: 0,
             elevation: 0,
-            cord_health: CORD_HEALTH
+            cord_health: CORD_HEALTH,
+            gear_spin: 0.0,
         }
     }
 }
@@ -201,6 +206,7 @@ impl Screen for GameScreen {
         }
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
+        self.gear_spin = (self.gear_spin + 0.25) % 360.0;
         None
     }
 
@@ -208,12 +214,23 @@ impl Screen for GameScreen {
         canvas.clear(Color::black());
         let double = Transform::scale(Vector::new(2, 2));
         for x in 0..30 {
-            for y in 0..17 {
-                let image = if y < 2 { &self.wall } else { &self.wood };
-                let offset = if y < 2 { self.wall_scroll } else { 0.0 };
-                canvas.draw_image_trans(image, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + offset), Color::white(), double);
+            for y in 0..2 {
+                canvas.draw_image_trans(&self.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll), Color::white(), double);
             }
         }
+        let left_gear_rotation = Transform::rotate(-self.gear_spin);
+        canvas.draw_image_trans(&self.gear, Vector::new(26, 64), Color::white(), left_gear_rotation * double);
+        let right_gear_rotation = Transform::rotate(self.gear_spin);
+        canvas.draw_image_trans(&self.gear, Vector::new(960 - 26, 64), Color::white(), right_gear_rotation * double);
+        for x in 0..30 {
+            for y in 2..17 {
+                canvas.draw_image_trans(&self.wood, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0), Color::white(), double);
+            }
+        }
+        let left_gear_rotation = Transform::rotate(-self.gear_spin);
+        canvas.draw_image_trans(&self.gear, Vector::new(26, 550), Color::white(), left_gear_rotation * double);
+        let right_gear_rotation = Transform::rotate(self.gear_spin);
+        canvas.draw_image_trans(&self.gear, Vector::new(960 - 26, 550), Color::white(), right_gear_rotation * double);
         //Draw the player
         match self.player_down {
             Option::Some(player_down) => {
