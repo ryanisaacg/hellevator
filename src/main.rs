@@ -18,6 +18,7 @@ use enemy::Enemy;
 use enemy::EnemyType;
 mod projectile;
 use projectile::Projectile;
+use projectile::ProjectileType;
 mod loading;
 use loading::LoadingScreen;
 mod game;

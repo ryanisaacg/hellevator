@@ -23,7 +23,6 @@ pub struct GameScreen {
     pub enemies: Vec<Enemy>,
     pub enemy_buffer: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
-    pub enemy_projectiles: Vec<Projectile>,
     pub player_image: Image,
     pub crosshair: Image,
     pub gun: Image,
@@ -57,7 +56,6 @@ impl GameScreen {
             enemies: Vec::new(),
             enemy_buffer: Vec::new(),
             projectiles: Vec::new(),
-            enemy_projectiles: Vec::new(),
             player_image: load.player_image,
             crosshair: load.crosshair,
             gun: load.gun,
@@ -122,7 +120,7 @@ impl Screen for GameScreen {
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/4) as f32),
                     Transform::rotate(rng.gen_range(-(MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE - MIN_GUN_SPREAD,
                     (MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE + MIN_GUN_SPREAD))
-                    * (window.mouse().pos() - self.player_pos.center()).normalize() * PLAYER_BULLET_SPEED));
+                    * (window.mouse().pos() - self.player_pos.center()).normalize() * PLAYER_BULLET_SPEED, ProjectileType::PlayerBullet));
             self.shoot_cooldown = MAX_SHOOT_COOLDOWN - ((MAX_SHOOT_COOLDOWN - MIN_SHOOT_COOLDOWN) as f32 * self.adrenaline / MAX_ADRENALINE) as i32;
         }
         if self.shoot_cooldown > 0 {
@@ -130,6 +128,9 @@ impl Screen for GameScreen {
         }
         if window.mouse().right().is_down() && self.player_down == Option::None {
             for p in self.projectiles.iter_mut() {
+                if p.proj_type != ProjectileType::PlayerBullet {
+                    continue;
+                }
                 let mut rng = rand::thread_rng();
                 p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-(REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE - REDIRECT_MIN_RANGE,
                         (REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE + REDIRECT_MIN_RANGE),
@@ -138,16 +139,16 @@ impl Screen for GameScreen {
             }
         }
         for e in self.enemies.iter_mut() {
-            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.enemy_projectiles, &mut self.enemy_buffer);
+            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer);
         }
         self.enemies.append(&mut self.enemy_buffer);
         for p in self.projectiles.iter_mut() {
             p.update();
         }
-        for p in self.enemy_projectiles.iter_mut() {
-            p.update();
-        }
         for p in self.projectiles.iter_mut() {
+            if p.proj_type != ProjectileType::PlayerBullet {
+                continue;
+            }
             for e in self.enemies.iter_mut() {
                 if p.pos.overlaps_circ(e.pos) {
                     e.remove = true;
@@ -157,7 +158,10 @@ impl Screen for GameScreen {
             }
         }
         if self.player_down == Option::None {
-            for p in self.enemy_projectiles.iter_mut() {
+            for p in self.projectiles.iter_mut() {
+                if p.proj_type != ProjectileType::EnemyBullet {
+                    continue;
+                }
                 if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
                     let mut rng = rand::thread_rng();
                     p.remove = true;
@@ -175,7 +179,6 @@ impl Screen for GameScreen {
         let death = self.death.clone();
         clean_list(&mut self.enemies, || death.play());
         clean_list(&mut self.projectiles, ||());
-        clean_list(&mut self.enemy_projectiles, ||());
         //Enemies by elevation function:
         //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
         self.elevation += 1;
@@ -258,9 +261,6 @@ impl Screen for GameScreen {
             }
         }
         for p in self.projectiles.iter() {
-            canvas.draw_circle(p.pos, Color::yellow());
-        }
-        for p in self.enemy_projectiles.iter() {
             canvas.draw_circle(p.pos, Color::yellow());
         }
         canvas.draw_circle(self.cord_pos, Color::blue());
