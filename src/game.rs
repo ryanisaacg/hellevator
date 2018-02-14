@@ -40,6 +40,7 @@ pub struct GameScreen {
     pub shoot_cooldown: i32,
     pub combat_roll: i32,
     pub adrenaline: f32,
+    pub web_timer: i32,
     pub elevation: i32,
     pub cord_health: f32
 }
@@ -71,6 +72,7 @@ impl GameScreen {
             shoot_cooldown: 0,
             combat_roll: 0,
             adrenaline: 0.0,
+            web_timer: 0,
             elevation: 0,
             cord_health: CORD_HEALTH
         }
@@ -101,10 +103,17 @@ impl Screen for GameScreen {
         if keyboard[Key::Space].is_down() {
             self.combat_roll = COMBAT_ROLL;
         }
-        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
-        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
-        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 };
+        if(self.web_timer > 0) {
+            self.web_timer -= 1;
+        }
+        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { 0.1 } else { 1.0 };
+        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { 0.1 } else { 1.0 };
+        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { 0.1 } else { 1.0 };
+        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { 0.1 } else { 1.0 };
         if keyboard[Key::LShift].is_down() && !keyboard[Key::D].is_down() && !keyboard[Key::W].is_down() && !keyboard[Key::A].is_down() && !keyboard[Key::S].is_down() &&
                 self.player_pos.overlaps_circ(self.cord_pos) {
             self.cord_health += MAX_REPAIR_SPEED - (MAX_REPAIR_SPEED - MIN_REPAIR_SPEED) * self.adrenaline / MAX_ADRENALINE;
@@ -154,14 +163,18 @@ impl Screen for GameScreen {
         }
         if self.player_down == Option::None {
             for p in self.projectiles.iter_mut() {
-                if p.proj_type != ProjectileType::EnemyBullet {
+                if p.proj_type == ProjectileType::PlayerBullet {
                     continue;
                 }
                 if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
                     let mut rng = rand::thread_rng();
                     p.remove = true;
-                    self.player_down = Option::Some(self.player_pos);
-                    self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
+                    if p.proj_type == ProjectileType::EnemyBullet {
+                        self.player_down = Option::Some(self.player_pos);
+                        self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
+                    } else if let ProjectileType::Web(web_timer) = p.proj_type {
+                        self.web_timer = 120;
+                    }
                 }
             }
         }
@@ -236,6 +249,7 @@ impl Screen for GameScreen {
             };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * shadow_offset, Color::white(), double);
             match e.enemy_type {
+                EnemyType::WebSpider(_) => canvas.draw_circle(e.pos, Color::red()),
                 EnemyType::MamaSpider(_, _) => canvas.draw_circle(e.pos, Color::purple()),
                 EnemyType::AngrySpider(_) => canvas.draw_image_trans(&self.angry_spider, e.pos.center(), Color::white(), double),
                 EnemyType::Spider(_) => canvas.draw_image_trans(&self.spider, e.pos.center(), Color::white(), double),

@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Copy, Clone)]
 pub enum EnemyType {
+    WebSpider(i32),
     MamaSpider(i32, Vector),
     AngrySpider(i32),
     Spider(i32),
@@ -26,7 +27,7 @@ impl Enemy {
         while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
             pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
         }
-        let types = [/*EnemyType::Bat, EnemyType::Gunner(0)*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero())];
+        let types = [/*EnemyType::Bat, EnemyType::Gunner(0)*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()), EnemyType::WebSpider(0)];
         if let Some(enemy_type) = rng.choose(&types) {
             Enemy { pos, enemy_type: *enemy_type, remove: false }
         } else {
@@ -36,6 +37,16 @@ impl Enemy {
 
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) {
         match self.enemy_type {
+            EnemyType::WebSpider(ref mut jump_cycle) => {
+                *jump_cycle = (*jump_cycle + 1) % 90;
+                if *jump_cycle > 74 {
+                    let mut rng = rand::thread_rng();
+                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize() * (90 - *jump_cycle) / 2);
+                }
+                if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 300.0*300.0 {
+                    projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::Web(0)));
+                }
+            },
             EnemyType::MamaSpider(ref mut jump_cycle, ref mut jump_direction) => {
                 let mut rng = rand::thread_rng();
                 *jump_cycle = (*jump_cycle + 1) % 150;
@@ -57,7 +68,7 @@ impl Enemy {
                     let mut rng = rand::thread_rng();
                     self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize() * (90 - *jump_cycle) / 2);
                 }
-                if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 150.0*150.0 {
+                if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 200.0*200.0 {
                     projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::EnemyBullet));
                 }
             },
