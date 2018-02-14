@@ -1,14 +1,22 @@
 use super::*;
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum ProjectileType {
+    PlayerBullet,
+    EnemyBullet,
+    Web(i32)
+}
+
 pub struct Projectile {
     pub pos: Circle,
     pub vel: Vector,
+    pub proj_type: ProjectileType,
     pub remove: bool
 }
 
 impl Projectile {
-    pub fn new(pos: Circle, vel: Vector) -> Projectile {
-        Projectile { pos, vel, remove: false }
+    pub fn new(pos: Circle, vel: Vector, proj_type: ProjectileType) -> Projectile {
+        Projectile { pos, vel, proj_type, remove: false }
     }
 
     pub fn update(&mut self) {

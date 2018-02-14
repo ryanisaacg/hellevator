@@ -34,7 +34,7 @@ impl Enemy {
         }
     }
 
-    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, enemy_projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) {
+    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) {
         match self.enemy_type {
             EnemyType::MamaSpider(ref mut jump_cycle, ref mut jump_direction) => {
                 let mut rng = rand::thread_rng();
@@ -58,7 +58,7 @@ impl Enemy {
                     self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize() * (90 - *jump_cycle) / 2);
                 }
                 if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 150.0*150.0 {
-                    enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
+                    projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::EnemyBullet));
                 }
             },
             EnemyType::Spider(ref mut jump_cycle) => {
@@ -90,7 +90,7 @@ impl Enemy {
                     self.pos = self.pos.translate((player.center() - self.pos.center()).normalize());
                 } else {
                     if *shoot_cooldown <= 0 {
-                        enemy_projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4));
+                        projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::EnemyBullet));
                         *shoot_cooldown = 250;
                     }
                 }
