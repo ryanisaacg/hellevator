@@ -2,23 +2,33 @@ use super::*;
 
 #[derive(Copy, Clone)]
 pub enum EnemyType {
+    BoomSpider(i32),
     WebSpider(i32),
     MamaSpider(i32, Vector),
     AngrySpider(i32),
     Spider(i32),
-    Bat,
-    Gunner(i32)
+    Bat
 }
 
 pub struct Enemy {
     pub pos: Circle,
     pub enemy_type: EnemyType,
+    pub health: f32,
+    pub max_health: f32,
     pub remove: bool
 }
 
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
-        Enemy { pos, enemy_type, remove: false }
+        let h = match enemy_type {
+            EnemyType::BoomSpider(_) => 99999.0,
+            EnemyType::WebSpider(_) => 12.0,
+            EnemyType::MamaSpider(_, _) => 25.0,
+            EnemyType::AngrySpider(_) => 9.0,
+            EnemyType::Spider(_) => 10.0,
+            EnemyType::Bat => 1.0
+        };
+        Enemy { pos, enemy_type, health: h, max_health: h, remove: false }
     }
 
     pub fn gen_new() -> Enemy {
@@ -27,16 +37,36 @@ impl Enemy {
         while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
             pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
         }
-        let types = [/*EnemyType::Bat, EnemyType::Gunner(0)*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()), EnemyType::WebSpider(0)];
+        let types = [/*EnemyType::Bat*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()),
+                EnemyType::WebSpider(0), EnemyType::BoomSpider(0)];
         if let Some(enemy_type) = rng.choose(&types) {
-            Enemy { pos, enemy_type: *enemy_type, remove: false }
+            Enemy::new(pos, *enemy_type)
         } else {
-            Enemy { pos, enemy_type: EnemyType::Bat, remove: false }
+            Enemy::new(pos, EnemyType::Bat)
         }
     }
 
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) {
         match self.enemy_type {
+            EnemyType::BoomSpider(ref mut jump_cycle) => {
+                *jump_cycle = (*jump_cycle + 1) % 45;
+                if *jump_cycle > 29 {
+                    let mut rng = rand::thread_rng();
+                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (cord_pos.center() - self.pos.center()).normalize() * (45 - *jump_cycle) / 2);
+                }
+                if self.pos.overlaps_circ(cord_pos) {
+                    self.health -= 1.0;
+                }
+                if self.health < self.max_health {
+                    self.remove = true;
+                    if (self.pos.center() - player.center()).len2() < 150.0*150.0 {
+                        //TODO kill player from here
+                    }
+                    if (self.pos.center() - cord_pos.center()).len2() < 150.0*150.0 {
+                        *cord_health -= 50.0;
+                    }
+                }
+            },
             EnemyType::WebSpider(ref mut jump_cycle) => {
                 *jump_cycle = (*jump_cycle + 1) % 90;
                 if *jump_cycle > 74 {
@@ -58,7 +88,7 @@ impl Enemy {
                 if *jump_cycle >= 149 && rng.gen_range(0.0, 1.0) < 0.3 {
                     let types = [EnemyType::Spider(0), EnemyType::AngrySpider(0)];
                     if let Some(enemy_type) = rng.choose(&types) {
-                        enemy_buffer.push(Enemy { pos: self.pos, enemy_type: *enemy_type, remove: false } );
+                        enemy_buffer.push(Enemy::new(self.pos, *enemy_type));
                     }
                 }
             },
@@ -91,19 +121,6 @@ impl Enemy {
                 if self.pos.overlaps_circ(cord_pos) {
                     self.remove = true;
                     *cord_health -= 10.0;
-                }
-            },
-            EnemyType::Gunner(ref mut shoot_cooldown) => {
-                if *shoot_cooldown > 0 {
-                    *shoot_cooldown -= 1;
-                }
-                if (self.pos.center() - player.center()).len2() > 500.0*500.0 {
-                    self.pos = self.pos.translate((player.center() - self.pos.center()).normalize());
-                } else {
-                    if *shoot_cooldown <= 0 {
-                        projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::EnemyBullet));
-                        *shoot_cooldown = 250;
-                    }
                 }
             }
         }

@@ -108,7 +108,7 @@ impl Screen for GameScreen {
         if keyboard[Key::Space].is_down() {
             self.combat_roll = COMBAT_ROLL;
         }
-        if(self.web_timer > 0) {
+        if self.web_timer > 0 {
             self.web_timer -= 1;
         }
         self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
@@ -160,7 +160,8 @@ impl Screen for GameScreen {
             }
             for e in self.enemies.iter_mut() {
                 if p.pos.overlaps_circ(e.pos) {
-                    e.remove = true;
+                    e.health -= 2.0 + 2.0 * self.adrenaline / MAX_ADRENALINE;
+                    e.remove = e.health <= 0.0;
                     p.remove = true;
                     self.adrenaline += ADRENALINE_GAIN;
                 }
@@ -177,7 +178,7 @@ impl Screen for GameScreen {
                     if p.proj_type == ProjectileType::EnemyBullet {
                         self.player_down = Option::Some(self.player_pos);
                         self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
-                    } else if let ProjectileType::Web(web_timer) = p.proj_type {
+                    } else if let ProjectileType::Web(_) = p.proj_type {
                         self.web_timer = 120;
                     }
                 }
@@ -266,12 +267,12 @@ impl Screen for GameScreen {
             };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * shadow_offset, Color::white(), double);
             match e.enemy_type {
+                EnemyType::BoomSpider(_) => canvas.draw_circle(e.pos, Color::green()),
                 EnemyType::WebSpider(_) => canvas.draw_circle(e.pos, Color::red()),
                 EnemyType::MamaSpider(_, _) => canvas.draw_circle(e.pos, Color::purple()),
                 EnemyType::AngrySpider(_) => canvas.draw_image_trans(&self.angry_spider, e.pos.center(), Color::white(), double),
                 EnemyType::Spider(_) => canvas.draw_image_trans(&self.spider, e.pos.center(), Color::white(), double),
-                EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double),
-                EnemyType::Gunner(_) => canvas.draw_circle(e.pos, Color::red())
+                EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double)
             }
         }
         for p in self.projectiles.iter() {

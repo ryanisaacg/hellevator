@@ -20,7 +20,7 @@ impl Projectile {
     }
 
     pub fn update(&mut self) {
-        match(self.proj_type) {
+        match self.proj_type {
             ProjectileType::PlayerBullet | ProjectileType::EnemyBullet => {
                 self.pos = self.pos.translate(self.vel);
             },
