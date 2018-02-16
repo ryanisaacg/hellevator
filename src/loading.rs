@@ -26,7 +26,8 @@ impl InitialScreen for LoadingScreen {
                 Image::load("img/md_stand.png"),
                 Image::load("img/spider.png"),
                 Image::load("img/angry_spider.png"),
-                Image::load("img/gear.png")]),
+                Image::load("img/gear.png"),
+                Image::load("img/web_spider.png")]),
             sounds: join_all(vec![
                 Sound::load("snd/gun.wav"),
                 Sound::load("snd/bat-death.wav")])
@@ -49,6 +50,7 @@ impl Screen for LoadingScreen {
             let spider = images[8].clone();
             let angry_spider = images[9].clone();
             let gear = images[10].clone();
+            let web_spider = images[11].clone();
             let fire = sounds[0].clone();
             let death = sounds[1].clone();
             Some(Box::new(GameScreen::new(LoadResults {
@@ -64,7 +66,8 @@ impl Screen for LoadingScreen {
                 medic,
                 spider,
                 angry_spider,
-                gear
+                gear,
+                web_spider,
             })))
         } else {
             None
