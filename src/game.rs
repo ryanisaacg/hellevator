@@ -102,8 +102,8 @@ const REDIRECT_MAX_RANGE: f32 = 30.0; //Square radius of inaccuracy of right cli
 const ADRENALINE_GAIN: f32 = 2.0; //Amount of adrenaline gained for each hit
 const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per tick
 
-impl Screen for GameScreen {
-    fn update(&mut self, window: &mut Window, _canvas: &mut Canvas) -> Option<Box<Screen>> {
+impl GameScreen {
+    pub fn update(&mut self, window: &mut Window) {
         let keyboard = window.keyboard();
         if self.combat_roll > 0 {
             self.combat_roll -= 1;
@@ -126,7 +126,7 @@ impl Screen for GameScreen {
                 self.player_pos.overlaps_circ(self.cord_pos) {
             self.cord_health += MAX_REPAIR_SPEED - (MAX_REPAIR_SPEED - MIN_REPAIR_SPEED) * self.adrenaline / MAX_ADRENALINE;
         }
-        if window.mouse().left().is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
+        if window.mouse()[MouseButton::Left].is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
             let mut rng = rand::thread_rng();
             self.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/4) as f32),
@@ -138,7 +138,7 @@ impl Screen for GameScreen {
         if self.shoot_cooldown > 0 {
             self.shoot_cooldown -= 1;
         }
-        if window.mouse().right().is_down() && self.player_down == Option::None {
+        if window.mouse()[MouseButton::Right].is_down() && self.player_down == Option::None {
             for p in self.projectiles.iter_mut() {
                 if p.proj_type != ProjectileType::PlayerBullet {
                     continue;
@@ -211,81 +211,88 @@ impl Screen for GameScreen {
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
         self.gear_spin = (self.gear_spin + 0.25) % 360.0;
-        None
     }
 
-    fn draw(&mut self, window: &mut Window, canvas: &mut Canvas) {
-        canvas.clear(Color::black());
+    pub fn draw(&mut self, window: &mut Window) {
+        use std::iter::once;
         let double = Transform::scale(Vector::new(2, 2));
-        for x in 0..30 {
-            for y in 0..2 {
-                canvas.draw_image_trans(&self.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll), Color::white(), double);
-            }
-        }
-        let left_gear_rotation = Transform::rotate(-self.gear_spin);
-        canvas.draw_image_trans(&self.gear, Vector::new(26, 64), Color::white(), left_gear_rotation * double);
-        let right_gear_rotation = Transform::rotate(self.gear_spin);
-        canvas.draw_image_trans(&self.gear, Vector::new(960 - 26, 64), Color::white(), right_gear_rotation * double);
-        for x in 0..30 {
-            for y in 2..17 {
-                canvas.draw_image_trans(&self.wood, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0), Color::white(), double);
-            }
-        }
-        let left_gear_rotation = Transform::rotate(-self.gear_spin);
-        canvas.draw_image_trans(&self.gear, Vector::new(26, 550), Color::white(), left_gear_rotation * double);
-        let right_gear_rotation = Transform::rotate(self.gear_spin);
-        canvas.draw_image_trans(&self.gear, Vector::new(960 - 26, 550), Color::white(), right_gear_rotation * double);
+        let mut draw_items = Vec::new();
+        let wall_z = -1000;
+        let back_gear_z = -900;
+        let front_gear_z = 1000;
+        let shadow_z = 10;
+        let projectile_z = 1500;
+        let center_z = 2000;
+        let ui_z = 3000;
+        //Draw walls
+        draw_items.extend(iproduct!(0..30, 0..2).map(|(x, y)| 
+                DrawCall::image(&self.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
+                    .with_transform(double)
+                    .with_z(wall_z)));
+        let left_gear_rotation = Transform::rotate(-self.gear_spin) * double;
+        let right_gear_rotation = Transform::rotate(self.gear_spin) * double;
+        //Draw gears
+        draw_items.extend_from_slice(&[
+            DrawCall::image(&self.gear, Vector::new(26, 64)).with_transform(left_gear_rotation).with_z(back_gear_z),
+            DrawCall::image(&self.gear, Vector::new(960 - 26, 64)).with_transform(right_gear_rotation).with_z(back_gear_z),
+            DrawCall::image(&self.gear, Vector::new(26, 550)).with_transform(left_gear_rotation).with_z(front_gear_z),
+            DrawCall::image(&self.gear, Vector::new(960 - 26, 550)).with_transform(right_gear_rotation).with_z(front_gear_z)
+        ]);
+        draw_items.extend(iproduct!(0..30, 2..17).map(|(x, y)|
+                DrawCall::image(&self.wood, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0))
+                    .with_transform(double)));
         //Draw the player
         match self.player_down {
-            Option::Some(player_down) => {
-                canvas.draw_image_trans(&self.shadow, player_down.center() + Vector::y() * 24, Color::white(), double);
-                canvas.draw_image_trans(&self.player_image, player_down.center(), Color::white(),
-                                        Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
-                                        * double);
-                canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
-                canvas.draw_image_trans(&self.medic, self.player_pos.center(), Color::white(), double);
-            },
+            Option::Some(player_down) => draw_items.extend_from_slice(&[
+                DrawCall::image(&self.shadow, player_down.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
+                DrawCall::image(&self.player_image, player_down.center()).with_transform(double).with_z(player_down.center().y),
+                DrawCall::image(&self.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
+                DrawCall::image(&self.medic, self.player_pos.center()).with_transform(double).with_z(self.player_pos.center().y)
+            ]),
             Option::None => {
-                canvas.draw_image_trans(&self.shadow, self.player_pos.center() + Vector::y() * 24, Color::white(), double);
-                canvas.draw_image_trans(&self.player_image, self.player_pos.center(), Color::white(),
-                                        Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0)
-                                        * double);
-                //Draw the player's weapon
                 let point = window.mouse().pos() - self.player_pos.center();
                 let rotation = point.angle();
                 let scale = Vector::new(1.0, point.x.signum());
-                canvas.draw_image_trans(&self.gun, self.player_pos.center(), Color::white(),
-                                        Transform::translate(Vector::new(0, 10))
+                let gun_transform = Transform::translate(Vector::new(0, 10))
                                         * Transform::rotate(rotation)
                                         * double
                                         * Transform::scale(scale)
-                                        * Transform::translate(Vector::new(12, 0)));
+                                        * Transform::translate(Vector::new(12, 0));
+                draw_items.extend_from_slice(&[
+                    DrawCall::image(&self.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
+                    DrawCall::image(&self.player_image, self.player_pos.center())
+                        .with_transform(Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0) * double).with_z(self.player_pos.center().y),
+                    DrawCall::image(&self.gun, self.player_pos.center()).with_transform(gun_transform).with_z(self.player_pos.center().y)
+                ])
             }
         }
-        for e in self.enemies.iter() {
+        // Draw enemies
+        draw_items.extend(self.enemies.iter().flat_map(|e| {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             let shadow_offset = match e.enemy_type {
                 EnemyType::Bat => 24,
                 _ => 4
             };
-            canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * shadow_offset, Color::white(), double);
-            match e.enemy_type {
-                EnemyType::BoomSpider(_) => canvas.draw_circle(e.pos, Color::green()),
-                EnemyType::WebSpider(_) => canvas.draw_image_trans(&self.web_spider, e.pos.center(), Color::white(), double),
-                EnemyType::MamaSpider(_, _) => canvas.draw_circle(e.pos, Color::purple()),
-                EnemyType::AngrySpider(_) => canvas.draw_image_trans(&self.angry_spider, e.pos.center(), Color::white(), double),
-                EnemyType::Spider(_) => canvas.draw_image_trans(&self.spider, e.pos.center(), Color::white(), double),
-                EnemyType::Bat => canvas.draw_image_trans(image, e.pos.center(), Color::white(), double)
-            }
-        }
-        for p in self.projectiles.iter() {
-            canvas.draw_circle(p.pos, Color::yellow());
-        }
-        canvas.draw_circle(self.cord_pos, Color::blue());
-        canvas.draw_rect(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0), Color::green());
-        canvas.draw_rect(Rectangle::new(960.0/2.0-100.0, 35.0, 200.0 * self.adrenaline / MAX_ADRENALINE, 15.0), Color::blue());
-        canvas.draw_image_trans(&self.crosshair, window.mouse().pos(), Color::white(), double);
-        canvas.present(window);
+            once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double).with_z(shadow_z))
+                .chain(once(match e.enemy_type {
+                    EnemyType::BoomSpider(_) => DrawCall::circle(e.pos).with_color(Color::green()),
+                    EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
+                    EnemyType::MamaSpider(_, _) => DrawCall::circle(e.pos).with_color(Color::purple()),
+                    EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),
+                    EnemyType::Spider(_) => DrawCall::image(&self.spider, e.pos.center()).with_transform(double),
+                    EnemyType::Bat => DrawCall::image(image, e.pos.center()).with_transform(double)
+                }.with_z(e.pos.y)))
+        }));
+        // Draw projectiles
+        draw_items.extend(self.projectiles.iter().map(|projectile| DrawCall::circle(projectile.pos).with_color(Color::yellow()).with_z(projectile_z)));
+        // Draw UI / misc
+        draw_items.extend_from_slice(&[
+            DrawCall::circle(self.cord_pos).with_color(Color::blue()).with_z(center_z),
+            DrawCall::rectangle(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0)).with_color(Color::green()).with_z(ui_z),
+            DrawCall::rectangle(Rectangle::new(960.0/2.0-100.0, 35.0, 200.0 * self.adrenaline / MAX_ADRENALINE, 15.0)).with_color(Color::blue()).with_z(ui_z),
+            DrawCall::image(&self.crosshair, window.mouse().pos()).with_transform(double).with_z(ui_z)
+        ]);
+        window.draw(draw_items.iter());
     }
 
 }
