@@ -17,6 +17,7 @@ pub struct LoadResults {
     pub death: Sound,
     pub spiderweb: Image,
     pub explode_spider: Image,
+    pub mama_spider: Image,
 }
 
 pub struct GameScreen {
@@ -41,6 +42,7 @@ pub struct GameScreen {
     pub web_spider: Image,
     pub spiderweb: Image,
     pub explode_spider: Image,
+    pub mama_spider: Image,
     pub gear: Image,
     pub death: Sound,
     pub bat_frame: u32,
@@ -79,6 +81,7 @@ impl GameScreen {
             web_spider: load.web_spider,
             spiderweb: load.spiderweb,
             explode_spider: load.explode_spider,
+            mama_spider: load.mama_spider,
             gear: load.gear,
             fire: load.fire,
             wall_scroll: 0.0,
@@ -278,13 +281,14 @@ impl GameScreen {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             let shadow_offset = match e.enemy_type {
                 EnemyType::Bat => 24,
+                EnemyType::MamaSpider(_, _) => 8,
                 _ => 4
             };
             once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
-                    EnemyType::MamaSpider(_, _) => DrawCall::circle(e.pos).with_color(Color::purple()),
+                    EnemyType::MamaSpider(_, _) => DrawCall::image(&self.mama_spider, e.pos.center()).with_transform(double),
                     EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),
                     EnemyType::Spider(_) => DrawCall::image(&self.spider, e.pos.center()).with_transform(double),
                     EnemyType::Bat => DrawCall::image(image, e.pos.center()).with_transform(double)
