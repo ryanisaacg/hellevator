@@ -18,6 +18,7 @@ pub struct LoadResults {
     pub spiderweb: Image,
     pub explode_spider: Image,
     pub mama_spider: Image,
+    pub plus: Image,
 }
 
 pub struct GameScreen {
@@ -43,6 +44,7 @@ pub struct GameScreen {
     pub spiderweb: Image,
     pub explode_spider: Image,
     pub mama_spider: Image,
+    pub plus: Image,
     pub gear: Image,
     pub death: Sound,
     pub bat_frame: u32,
@@ -53,7 +55,8 @@ pub struct GameScreen {
     pub web_timer: i32,
     pub elevation: i32,
     pub cord_health: f32,
-    pub gear_spin: f32
+    pub gear_spin: f32,
+    particles: Vec<Particle>
 }
 
 impl GameScreen {
@@ -82,6 +85,7 @@ impl GameScreen {
             spiderweb: load.spiderweb,
             explode_spider: load.explode_spider,
             mama_spider: load.mama_spider,
+            plus: load.plus,
             gear: load.gear,
             fire: load.fire,
             wall_scroll: 0.0,
@@ -92,6 +96,7 @@ impl GameScreen {
             elevation: 0,
             cord_health: CORD_HEALTH,
             gear_spin: 0.0,
+            particles: Vec::new()
         }
     }
 }
@@ -200,6 +205,17 @@ impl GameScreen {
             if player_down.overlaps_circ(self.player_pos) {
                 self.player_pos = player_down;
                 self.player_down = Option::None;
+                let mut rng = rand::thread_rng();
+                for _ in 0..10 {
+                    self.particles.push(Particle {
+                        image: self.plus.clone(),
+                        pos: self.player_pos.center(),
+                        velocity: (rng.gen::<Vector>() - Vector::new(0.5, 0.5)) * 6,
+                        rotation: 0.0,
+                        rotational_velocity: 0.0,
+                        lifetime: 20
+                    })
+                }
             }
         }
         let death = self.death.clone();
@@ -217,6 +233,13 @@ impl GameScreen {
         } else if self.adrenaline > MAX_ADRENALINE {
             self.adrenaline = MAX_ADRENALINE;
         }
+        //Do the particle update
+        for particle in self.particles.iter_mut() {
+            particle.pos += particle.velocity;
+            particle.rotation += particle.rotational_velocity;
+            particle.lifetime -= 1;
+        }
+        clean_list(&mut self.particles, ||());
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
         self.gear_spin = (self.gear_spin + 0.25) % 360.0;
@@ -233,6 +256,9 @@ impl GameScreen {
         let projectile_z = 1500;
         let center_z = 2000;
         let ui_z = 3000;
+        //Draw particles
+        draw_items.extend(self.particles.iter().map(|x| 
+            DrawCall::image(&x.image, x.pos).with_transform(Transform::rotate(x.rotation))));
         //Draw walls
         draw_items.extend(iproduct!(0..30, 0..2).map(|(x, y)| 
                 DrawCall::image(&self.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))

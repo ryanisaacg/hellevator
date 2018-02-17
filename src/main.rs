@@ -17,6 +17,8 @@ use rand::Rng;
 mod enemy;
 use enemy::Enemy;
 use enemy::EnemyType;
+mod particle;
+use particle::Particle;
 mod projectile;
 use projectile::Projectile;
 use projectile::ProjectileType;
@@ -61,7 +63,8 @@ impl State for StateMachine {
                 Image::load("img/web_spider.png"),
                 Image::load("img/spiderweb.png"),
                 Image::load("img/explode_spider.png"),
-                Image::load("img/mama_spider.png")])
+                Image::load("img/mama_spider.png"),
+                Image::load("img/plus.png")])
             .join(join_all(vec![
                 Sound::load("snd/gun.wav"),
                 Sound::load("snd/bat-death.wav")])))
@@ -94,6 +97,7 @@ impl State for StateMachine {
                 spiderweb: images[12].clone(),
                 explode_spider: images[13].clone(),
                 mama_spider: images[14].clone(),
+                plus: images[15].clone(),
                 fire: sounds[0].clone(),
                 death: sounds[1].clone(),
             }));
