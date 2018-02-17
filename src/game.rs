@@ -16,6 +16,7 @@ pub struct LoadResults {
     pub fire: Sound,
     pub death: Sound,
     pub spiderweb: Image,
+    pub explode_spider: Image,
 }
 
 pub struct GameScreen {
@@ -39,6 +40,7 @@ pub struct GameScreen {
     pub angry_spider: Image,
     pub web_spider: Image,
     pub spiderweb: Image,
+    pub explode_spider: Image,
     pub gear: Image,
     pub death: Sound,
     pub bat_frame: u32,
@@ -76,6 +78,7 @@ impl GameScreen {
             angry_spider: load.angry_spider,
             web_spider: load.web_spider,
             spiderweb: load.spiderweb,
+            explode_spider: load.explode_spider,
             gear: load.gear,
             fire: load.fire,
             wall_scroll: 0.0,
@@ -279,7 +282,7 @@ impl GameScreen {
             };
             once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
-                    EnemyType::BoomSpider(_) => DrawCall::circle(e.pos).with_color(Color::green()),
+                    EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
                     EnemyType::MamaSpider(_, _) => DrawCall::circle(e.pos).with_color(Color::purple()),
                     EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),
