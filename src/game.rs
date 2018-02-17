@@ -14,7 +14,8 @@ pub struct LoadResults {
     pub web_spider: Image,
     pub gear: Image,
     pub fire: Sound,
-    pub death: Sound
+    pub death: Sound,
+    pub spiderweb: Image,
 }
 
 pub struct GameScreen {
@@ -37,6 +38,7 @@ pub struct GameScreen {
     pub spider: Image,
     pub angry_spider: Image,
     pub web_spider: Image,
+    pub spiderweb: Image,
     pub gear: Image,
     pub death: Sound,
     pub bat_frame: u32,
@@ -73,6 +75,7 @@ impl GameScreen {
             spider: load.spider,
             angry_spider: load.angry_spider,
             web_spider: load.web_spider,
+            spiderweb: load.spiderweb,
             gear: load.gear,
             fire: load.fire,
             wall_scroll: 0.0,
@@ -261,6 +264,7 @@ impl GameScreen {
                 draw_items.extend_from_slice(&[
                     DrawCall::image(&self.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
                     DrawCall::image(&self.player_image, self.player_pos.center())
+                        .with_color(if self.web_timer > 0 { Color { r: 1.5, g: 1.5, b: 1.5, a: 1.0 } } else { Color::white() })
                         .with_transform(Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0) * double).with_z(self.player_pos.center().y),
                     DrawCall::image(&self.gun, self.player_pos.center()).with_transform(gun_transform).with_z(self.player_pos.center().y)
                 ])
@@ -284,7 +288,12 @@ impl GameScreen {
                 }.with_z(e.pos.y)))
         }));
         // Draw projectiles
-        draw_items.extend(self.projectiles.iter().map(|projectile| DrawCall::circle(projectile.pos).with_color(Color::yellow()).with_z(projectile_z)));
+        draw_items.extend(self.projectiles.iter().map(|projectile| match projectile.proj_type {
+            ProjectileType::PlayerBullet => DrawCall::circle(projectile.pos).with_color(Color::yellow()).with_z(projectile_z),
+            ProjectileType::EnemyBullet => DrawCall::circle(projectile.pos).with_color(Color::red()).with_z(projectile_z),
+            ProjectileType::Web(ticks) if ticks <= 90 => DrawCall::circle(projectile.pos).with_color(Color::white()).with_z(projectile_z),
+            ProjectileType::Web(_) => DrawCall::image(&self.spiderweb, projectile.pos.center()).with_transform(double).with_z(projectile_z)
+        }));
         // Draw UI / misc
         draw_items.extend_from_slice(&[
             DrawCall::circle(self.cord_pos).with_color(Color::blue()).with_z(center_z),
