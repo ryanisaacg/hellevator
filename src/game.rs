@@ -19,6 +19,8 @@ pub struct LoadResults {
     pub explode_spider: Image,
     pub mama_spider: Image,
     pub plus: Image,
+    pub spider_skitter: Image,
+    pub wire: Image
 }
 
 pub struct GameScreen {
@@ -44,6 +46,8 @@ pub struct GameScreen {
     pub spiderweb: Image,
     pub explode_spider: Image,
     pub mama_spider: Image,
+    pub spider_skitter: [Image; 2],
+    pub wire: Image,
     pub plus: Image,
     pub gear: Image,
     pub death: Sound,
@@ -85,6 +89,8 @@ impl GameScreen {
             spiderweb: load.spiderweb,
             explode_spider: load.explode_spider,
             mama_spider: load.mama_spider,
+            spider_skitter: [load.spider_skitter.subimage(Rectangle::new_sized(12, 12)), load.spider_skitter.subimage(Rectangle::new(12, 0, 12, 12))],
+            wire: load.wire,
             plus: load.plus,
             gear: load.gear,
             fire: load.fire,
@@ -266,6 +272,10 @@ impl GameScreen {
                     .with_z(wall_z)));
         let left_gear_rotation = Transform::rotate(-self.gear_spin) * double;
         let right_gear_rotation = Transform::rotate(self.gear_spin) * double;
+        //Draw the wire
+        draw_items.extend((0..5).map(|y| DrawCall::image(&self.wire, Vector::new(480.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
+                    .with_transform(double)
+                    .with_z(y * 64 + 50)));
         //Draw gears
         draw_items.extend_from_slice(&[
             DrawCall::image(&self.gear, Vector::new(26, 64)).with_transform(left_gear_rotation).with_z(back_gear_z),
@@ -316,7 +326,7 @@ impl GameScreen {
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
                     EnemyType::MamaSpider(_, _) => DrawCall::image(&self.mama_spider, e.pos.center()).with_transform(double),
                     EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),
-                    EnemyType::Spider(_) => DrawCall::image(&self.spider, e.pos.center()).with_transform(double),
+                    EnemyType::Spider(jump, frame) => DrawCall::image(if jump > 44 { &self.spider_skitter[(frame / 15) as usize] } else { &self.spider }, e.pos.center()).with_transform(double),
                     EnemyType::Bat => DrawCall::image(image, e.pos.center()).with_transform(double)
                 }.with_z(e.pos.y)))
         }));
@@ -329,7 +339,7 @@ impl GameScreen {
         }));
         // Draw UI / misc
         draw_items.extend_from_slice(&[
-            DrawCall::circle(self.cord_pos).with_color(Color::blue()).with_z(center_z),
+            DrawCall::circle(self.cord_pos).with_color(Color::black()).with_z(center_z),
             DrawCall::rectangle(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0)).with_color(Color::green()).with_z(ui_z),
             DrawCall::rectangle(Rectangle::new(960.0/2.0-100.0, 35.0, 200.0 * self.adrenaline / MAX_ADRENALINE, 15.0)).with_color(Color::blue()).with_z(ui_z),
             DrawCall::image(&self.crosshair, window.mouse().pos()).with_transform(double).with_z(ui_z)

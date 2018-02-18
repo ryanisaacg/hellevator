@@ -64,7 +64,9 @@ impl State for StateMachine {
                 Image::load("img/spiderweb.png"),
                 Image::load("img/explode_spider.png"),
                 Image::load("img/mama_spider.png"),
-                Image::load("img/plus.png")])
+                Image::load("img/plus.png"),
+                Image::load("img/spider_skitter.png"),
+                Image::load("img/wire.png")])
             .join(join_all(vec![
                 Sound::load("snd/gun.wav"),
                 Sound::load("snd/bat-death.wav")])))
@@ -98,6 +100,8 @@ impl State for StateMachine {
                 explode_spider: images[13].clone(),
                 mama_spider: images[14].clone(),
                 plus: images[15].clone(),
+                spider_skitter: images[16].clone(),
+                wire: images[17].clone(),
                 fire: sounds[0].clone(),
                 death: sounds[1].clone(),
             }));

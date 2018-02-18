@@ -6,7 +6,7 @@ pub enum EnemyType {
     WebSpider(i32),
     MamaSpider(i32, Vector),
     AngrySpider(i32),
-    Spider(i32),
+    Spider(i32, u32),
     Bat
 }
 
@@ -25,7 +25,7 @@ impl Enemy {
             EnemyType::WebSpider(_) => 12.0,
             EnemyType::MamaSpider(_, _) => 25.0,
             EnemyType::AngrySpider(_) => 9.0,
-            EnemyType::Spider(_) => 10.0,
+            EnemyType::Spider(_, _) => 10.0,
             EnemyType::Bat => 1.0
         };
         Enemy { pos, enemy_type, health: h, max_health: h, remove: false }
@@ -37,7 +37,7 @@ impl Enemy {
         while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
             pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
         }
-        let types = [/*EnemyType::Bat*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()),
+        let types = [/*EnemyType::Bat*/ EnemyType::Spider(0, 0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()),
                 EnemyType::WebSpider(0), EnemyType::BoomSpider(0)];
         if let Some(enemy_type) = rng.choose(&types) {
             Enemy::new(pos, *enemy_type)
@@ -86,7 +86,7 @@ impl Enemy {
                     self.pos = self.pos.translate(*jump_direction * (150 - *jump_cycle) / 2);
                 }
                 if *jump_cycle >= 149 && rng.gen_range(0.0, 1.0) < 0.3 {
-                    let types = [EnemyType::Spider(0), EnemyType::AngrySpider(0)];
+                    let types = [EnemyType::Spider(0, 0), EnemyType::AngrySpider(0)];
                     if let Some(enemy_type) = rng.choose(&types) {
                         enemy_buffer.push(Enemy::new(self.pos, *enemy_type));
                     }
@@ -102,11 +102,12 @@ impl Enemy {
                     projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::EnemyBullet));
                 }
             },
-            EnemyType::Spider(ref mut jump_cycle) => {
+            EnemyType::Spider(ref mut jump_cycle, ref mut frame) => {
                 *jump_cycle = (*jump_cycle + 1) % 60;
                 if *jump_cycle > 44 {
                     let mut rng = rand::thread_rng();
                     self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (cord_pos.center() - self.pos.center()).normalize() * (60 - *jump_cycle) / 2);
+                    *frame = (*frame + 1) % 30;
                 }
                 if self.pos.overlaps_circ(cord_pos) {
                     self.remove = true;
