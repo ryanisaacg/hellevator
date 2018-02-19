@@ -1,28 +1,5 @@
 use super::*;
 
-pub struct LoadResults {
-    pub player_image: Image,
-    pub crosshair: Image,
-    pub gun: Image,
-    pub wood: Image,
-    pub shadow: Image,
-    pub wall: Image,
-    pub bat: Image,
-    pub medic: Image,
-    pub spider: Image,
-    pub angry_spider: Image,
-    pub web_spider: Image,
-    pub gear: Image,
-    pub fire: Sound,
-    pub death: Sound,
-    pub spiderweb: Image,
-    pub explode_spider: Image,
-    pub mama_spider: Image,
-    pub plus: Image,
-    pub spider_skitter: Image,
-    pub wire: Image
-}
-
 pub struct GameScreen {
     pub player_down: Option<Circle>,
     pub player_pos: Circle,
@@ -64,7 +41,8 @@ pub struct GameScreen {
 }
 
 impl GameScreen {
-    pub fn new(load: LoadResults) -> GameScreen {
+    pub fn new(loaded: (Vec<Image>, Vec<Sound>)) -> GameScreen {
+        let (images, sounds) = loaded;
         GameScreen {
             player_down: Option::None,
             player_pos: Circle::new(100, 100, PLAYER_RADIUS),
@@ -72,28 +50,28 @@ impl GameScreen {
             enemies: Vec::new(),
             enemy_buffer: Vec::new(),
             projectiles: Vec::new(),
-            player_image: load.player_image,
-            crosshair: load.crosshair,
-            gun: load.gun,
-            wood: load.wood,
-            shadow: load.shadow,
-            wall: load.wall,
-            medic: load.medic,
-            bat_up: load.bat.subimage(Rectangle::new(0, 0, 16, 16)),
-            bat_down: load.bat.subimage(Rectangle::new(16, 0, 16, 16)),
-            death: load.death,
+            player_image: images[0].clone(),
+            crosshair: images[1].clone(),
+            gun: images[2].clone(),
+            wood: images[3].clone(),
+            shadow: images[4].clone(),
+            wall: images[5].clone(),
+            medic: images[6].clone(),
+            bat_up: images[7].subimage(Rectangle::new(0, 0, 16, 16)),
+            bat_down: images[7].subimage(Rectangle::new(16, 0, 16, 16)),
+            death: sounds[1].clone(),
             bat_frame: 0,
-            spider: load.spider,
-            angry_spider: load.angry_spider,
-            web_spider: load.web_spider,
-            spiderweb: load.spiderweb,
-            explode_spider: load.explode_spider,
-            mama_spider: load.mama_spider,
-            spider_skitter: [load.spider_skitter.subimage(Rectangle::new_sized(12, 12)), load.spider_skitter.subimage(Rectangle::new(12, 0, 12, 12))],
-            wire: load.wire,
-            plus: load.plus,
-            gear: load.gear,
-            fire: load.fire,
+            spider: images[8].clone(),
+            angry_spider: images[9].clone(),
+            web_spider: images[10].clone(),
+            spiderweb: images[11].clone(),
+            explode_spider: images[12].clone(),
+            mama_spider: images[13].clone(),
+            spider_skitter: [images[14].subimage(Rectangle::new_sized(12, 12)), images[14].subimage(Rectangle::new(12, 0, 12, 12))],
+            wire: images[15].clone(),
+            plus: images[16].clone(),
+            gear: images[17].clone(),
+            fire: sounds[0].clone(),
             wall_scroll: 0.0,
             shoot_cooldown: 0,
             combat_roll: 0,

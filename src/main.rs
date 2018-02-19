@@ -82,29 +82,7 @@ impl State for StateMachine {
             Async::NotReady
         };
         if let Async::Ready(loaded) = loaded_assets {
-            let (images, sounds) = loaded;
-            *self = StateMachine::Game(GameScreen::new(LoadResults {
-                player_image: images[0].clone(),
-                crosshair: images[1].clone(),
-                gun: images[2].clone(),
-                wood: images[3].clone(),
-                shadow: images[4].clone(),
-                wall: images[5].clone(),
-                bat: images[6].clone(),
-                medic: images[7].clone(),
-                spider: images[8].clone(),
-                angry_spider: images[9].clone(),
-                gear: images[10].clone(),
-                web_spider: images[11].clone(),
-                spiderweb: images[12].clone(),
-                explode_spider: images[13].clone(),
-                mama_spider: images[14].clone(),
-                plus: images[15].clone(),
-                spider_skitter: images[16].clone(),
-                wire: images[17].clone(),
-                fire: sounds[0].clone(),
-                death: sounds[1].clone(),
-            }));
+            *self = StateMachine::Game(GameScreen::new(loaded));
         }
         if let &mut StateMachine::Game(ref mut state) = self {
             state.update(window);
