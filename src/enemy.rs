@@ -35,7 +35,7 @@ impl Enemy {
         let mut rng = rand::thread_rng();
         let mut pos = Circle::new(0.0, 0.0, 9999999.0);
         while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
-            pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
+            pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(64, 540), PLAYER_RADIUS/2);
         }
         let types = [/*EnemyType::Bat*/ EnemyType::Spider(0, 0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()),
                 EnemyType::WebSpider(0), EnemyType::BoomSpider(0)];
