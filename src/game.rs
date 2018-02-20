@@ -32,6 +32,7 @@ pub struct GameScreen {
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
     pub combat_roll: i32,
+    pub roll_cooldown: i32,
     pub adrenaline: f32,
     pub web_timer: i32,
     pub elevation: i32,
@@ -74,6 +75,7 @@ impl GameScreen {
             fire: sounds[0].clone(),
             wall_scroll: 0.0,
             shoot_cooldown: 0,
+            roll_cooldown: 0,
             combat_roll: 0,
             adrenaline: 0.0,
             web_timer: 0,
@@ -86,7 +88,8 @@ impl GameScreen {
 }
 
 const MAX_ADRENALINE: f32 = 100.0; //Internal 100% adrenaline
-const COMBAT_ROLL: i32 = 15; //Duration in ticks of combat roll
+const COMBAT_ROLL_DURATION: i32 = 15; //Duration in ticks of combat roll
+const COMBAT_ROLL_COOLDOWN: i32 = 30; //Ticks between being able to activeate combat rolls
 const COMBAT_ROLL_SPEED_FACTOR: f32 = 1.75; //Factor by which speed is multiplied during combat roll
 const MIN_REPAIR_SPEED: f32 = 0.02; //Repair speed at maximum adrenaline
 const MAX_REPAIR_SPEED: f32 = 0.05; //Repair speed at minimum adrenaline
@@ -108,8 +111,12 @@ impl GameScreen {
         if self.combat_roll > 0 {
             self.combat_roll -= 1;
         }
-        if keyboard[Key::Space].is_down() {
-            self.combat_roll = COMBAT_ROLL;
+        if self.roll_cooldown > 0 {
+            self.roll_cooldown -= 1;
+        }
+        if keyboard[Key::Space] == ButtonState::Pressed && self.roll_cooldown <= 0 {
+            self.combat_roll = COMBAT_ROLL_DURATION;
+            self.roll_cooldown = COMBAT_ROLL_COOLDOWN;
         }
         if self.web_timer > 0 {
             self.web_timer -= 1;
