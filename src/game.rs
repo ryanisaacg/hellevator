@@ -99,6 +99,8 @@ const REDIRECT_MIN_RANGE: f32 = 10.0; //Square radius of inaccuracy of right cli
 const REDIRECT_MAX_RANGE: f32 = 30.0; //Square radius of inaccuracy of right click at maximum adrenaline
 const ADRENALINE_GAIN: f32 = 2.0; //Amount of adrenaline gained for each hit
 const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per tick
+const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
+const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
 
 impl GameScreen {
     pub fn update(&mut self, window: &mut Window) {
@@ -112,14 +114,17 @@ impl GameScreen {
         if self.web_timer > 0 {
             self.web_timer -= 1;
         }
-        self.player_pos.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { 0.1 } else { 1.0 };
-        self.player_pos.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { 0.1 } else { 1.0 };
-        self.player_pos.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { 0.1 } else { 1.0 };
-        self.player_pos.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { 0.1 } else { 1.0 };
+        let mut player_move = Vector::zero();
+        player_move.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+        player_move.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+        player_move.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+        player_move.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
+                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+        self.player_pos = self.player_pos.translate(player_move).constrain(GAME_AREA);
+
         if keyboard[Key::LShift].is_down() && !keyboard[Key::D].is_down() && !keyboard[Key::W].is_down() && !keyboard[Key::A].is_down() && !keyboard[Key::S].is_down() &&
                 self.player_pos.overlaps_circ(self.cord_pos) {
             self.cord_health += MAX_REPAIR_SPEED - (MAX_REPAIR_SPEED - MIN_REPAIR_SPEED) * self.adrenaline / MAX_ADRENALINE;

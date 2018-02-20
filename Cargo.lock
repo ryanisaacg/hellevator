@@ -633,7 +633,7 @@ dependencies = [
 [[package]]
 name = "quicksilver"
 version = "0.1.1"
-source = "git+https://github.com/ryanisaacg/quicksilver#01b761c12fe65b45ce87e26349e754fe7d1b5e5e"
+source = "git+https://github.com/ryanisaacg/quicksilver#179d9638951fe5310e79bdb2947eb076624a8bdc"
 dependencies = [
  "futures 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "gl 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
