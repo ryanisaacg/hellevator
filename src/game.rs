@@ -38,6 +38,7 @@ pub struct GameScreen {
     pub elevation: i32,
     pub cord_health: f32,
     pub gear_spin: f32,
+    screen_shake: f32,
     particles: Vec<Particle>
 }
 
@@ -82,6 +83,7 @@ impl GameScreen {
             elevation: 0,
             cord_health: CORD_HEALTH,
             gear_spin: 0.0,
+            screen_shake: 100.0,
             particles: Vec::new()
         }
     }
@@ -107,6 +109,13 @@ const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 
 
 impl GameScreen {
     pub fn update(&mut self, window: &mut Window) {
+        let mut rng = rand::thread_rng();
+        if self.screen_shake > 1.0 {
+            self.screen_shake -= 0.5;
+        } else {
+            self.screen_shake = 0.0;
+        }
+        window.set_view(View::new_transformed(Rectangle::new_sized(960, 540), Transform::translate((rng.gen::<Vector>() - Vector::one() * 0.5) * self.screen_shake)));
         let keyboard = window.keyboard();
         if self.combat_roll > 0 {
             self.combat_roll -= 1;
@@ -137,7 +146,6 @@ impl GameScreen {
             self.cord_health += MAX_REPAIR_SPEED - (MAX_REPAIR_SPEED - MIN_REPAIR_SPEED) * self.adrenaline / MAX_ADRENALINE;
         }
         if window.mouse()[MouseButton::Left].is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
-            let mut rng = rand::thread_rng();
             self.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/4) as f32),
                     Transform::rotate(rng.gen_range(-(MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE - MIN_GUN_SPREAD,
@@ -153,7 +161,6 @@ impl GameScreen {
                 if p.proj_type != ProjectileType::PlayerBullet {
                     continue;
                 }
-                let mut rng = rand::thread_rng();
                 p.vel = (window.mouse().pos() + Vector::new(rng.gen_range(-(REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE - REDIRECT_MIN_RANGE,
                         (REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE + REDIRECT_MIN_RANGE),
                         rng.gen_range(-(REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE - REDIRECT_MIN_RANGE,
@@ -186,7 +193,6 @@ impl GameScreen {
                     continue;
                 }
                 if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
-                    let mut rng = rand::thread_rng();
                     p.remove = true;
                     if p.proj_type == ProjectileType::EnemyBullet {
                         self.player_down = Option::Some(self.player_pos);
@@ -201,7 +207,6 @@ impl GameScreen {
             if player_down.overlaps_circ(self.player_pos) {
                 self.player_pos = player_down;
                 self.player_down = Option::None;
-                let mut rng = rand::thread_rng();
                 for _ in 0..10 {
                     self.particles.push(Particle {
                         image: self.plus.clone(),
