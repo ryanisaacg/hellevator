@@ -41,7 +41,7 @@ pub struct GameScreen {
     pub elevation: i32,
     pub cord_health: f32,
     pub gear_spin: f32,
-    particles: Vec<Particle>
+    particles: Vec<Particle>,
 }
 
 impl GameScreen {
@@ -88,7 +88,7 @@ impl GameScreen {
             elevation: 0,
             cord_health: CORD_HEALTH,
             gear_spin: 0.0,
-            particles: Vec::new()
+            particles: Vec::new(),
         }
     }
 }
@@ -110,16 +110,22 @@ const ADRENALINE_GAIN: f32 = 2.0; //Amount of adrenaline gained for each hit
 const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per tick
 const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
 const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
+const PLAYER_DEATH_PROJECTILES: u32 = 12; //The amount of projectiles spawned when the player dies
 
 impl GameScreen {
-    fn player_hit(player_down: &mut Option<Circle>, player_pos: &mut Circle) {
+    fn player_hit(player_down: &mut Option<Circle>, player_pos: &mut Circle, projectiles: &mut Vec<Projectile>) {
         let mut rng = rand::thread_rng();
         *player_down = Option::Some(*player_pos);
+        for i in 0..PLAYER_DEATH_PROJECTILES {
+            let angle = 360.0 * i as f32 / PLAYER_DEATH_PROJECTILES as f32;
+            projectiles.push(Projectile::new(Circle::newv(player_pos.center(), (PLAYER_RADIUS/4) as f32), Vector::from_angle(angle) * 5, ProjectileType::PlayerBullet));
+        }
         *player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), player_pos.radius);
     }
 
     pub fn update(&mut self, window: &mut Window) {
         let keyboard = window.keyboard();
+        let mut projectile_buffer = Vec::new();
         if self.combat_roll > 0 {
             self.combat_roll -= 1;
         }
@@ -175,7 +181,7 @@ impl GameScreen {
         for e in self.enemies.iter_mut() {
             let result = e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer);
             match result {
-                UpdateResult::HitPlayer => GameScreen::player_hit(&mut self.player_down, &mut self.player_pos),
+                UpdateResult::HitPlayer => GameScreen::player_hit(&mut self.player_down, &mut self.player_pos, &mut projectile_buffer),
                 UpdateResult::None => ()
             }
             e.pos = e.pos.constrain(GAME_AREA);
@@ -221,7 +227,7 @@ impl GameScreen {
                 if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
                     p.remove = true;
                     if p.proj_type == ProjectileType::EnemyBullet {
-                        GameScreen::player_hit(&mut self.player_down, &mut self.player_pos);
+                        GameScreen::player_hit(&mut self.player_down, &mut self.player_pos, &mut projectile_buffer);
                     } else if let ProjectileType::Web(_) = p.proj_type {
                         self.web_timer = 120;
                     }
@@ -279,6 +285,7 @@ impl GameScreen {
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
         self.gear_spin = (self.gear_spin + 0.25) % 360.0;
+        self.projectiles.extend(projectile_buffer);
     }
 
     pub fn draw(&mut self, window: &mut Window) {
