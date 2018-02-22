@@ -66,7 +66,8 @@ impl State for StateMachine {
                 Image::load("img/mama_spider.png"),
                 Image::load("img/plus.png"),
                 Image::load("img/spider_skitter.png"),
-                Image::load("img/wire.png")])
+                Image::load("img/wire.png"),
+                Image::load("img/enemy_death_particle.png")])
             .join(join_all(vec![
                 Sound::load("snd/gun.wav"),
                 Sound::load("snd/bat-death.wav")])))

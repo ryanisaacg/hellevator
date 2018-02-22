@@ -28,6 +28,7 @@ pub struct GameScreen {
     pub plus: Image,
     pub gear: Image,
     pub death: Sound,
+    pub enemy_death_particle: Image,
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
@@ -72,6 +73,7 @@ impl GameScreen {
             plus: images[15].clone(),
             spider_skitter: [images[16].subimage(Rectangle::new_sized(12, 12)), images[16].subimage(Rectangle::new(12, 0, 12, 12))],
             wire: images[17].clone(),
+            enemy_death_particle: images[18].clone(),
             fire: sounds[0].clone(),
             wall_scroll: 0.0,
             shoot_cooldown: 0,
@@ -215,8 +217,32 @@ impl GameScreen {
             }
         }
         let death = self.death.clone();
-        clean_list(&mut self.enemies, || death.play());
-        clean_list(&mut self.projectiles, ||());
+        let mut particles = Vec::with_capacity(0);
+        let death_particle = self.enemy_death_particle.clone();
+        clean_list(&mut self.enemies, |enemy| {
+            death.play();
+            let amount_particles = match enemy.enemy_type {
+                EnemyType::BoomSpider(_) => 4,
+                EnemyType::WebSpider(_) => 6,
+                EnemyType::MamaSpider(_, _) => 12,
+                EnemyType::AngrySpider(_) => 5,
+                EnemyType::Spider(_, _) => 3,
+                EnemyType::Bat => 1
+            };
+            for _ in 0..amount_particles {
+                let mut rng = rand::thread_rng();
+                particles.push(Particle {
+                            image: death_particle.clone(),
+                            pos: enemy.pos.center(),
+                            velocity: (rng.gen::<Vector>() - Vector::new(0.5, 0.5)) * 6,
+                            rotation: 0.0,
+                            rotational_velocity: 0.0,
+                            lifetime: 10
+                        })
+            }
+        });
+        self.particles.extend(particles);
+        clean_list(&mut self.projectiles, |_|());
         //Enemies by elevation function:
         //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
         self.elevation += 1;
@@ -235,7 +261,7 @@ impl GameScreen {
             particle.rotation += particle.rotational_velocity;
             particle.lifetime -= 1;
         }
-        clean_list(&mut self.particles, ||());
+        clean_list(&mut self.particles, |_|());
         self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
         self.bat_frame = (self.bat_frame + 1) % 60;
         self.gear_spin = (self.gear_spin + 0.25) % 360.0;
@@ -339,12 +365,11 @@ impl GameScreen {
 
 }
 
-fn clean_list<T: Killable, F: Fn()>(list: &mut Vec<T>, on_death: F) {
+fn clean_list<T, F>(list: &mut Vec<T>, mut on_death: F) where T: Killable, F: FnMut(T) {
     let mut i = 0;
     while i < list.len() {
         if list[i].is_dead() {
-            list.remove(i);
-            on_death();
+            on_death(list.remove(i));
         } else {
             i += 1;
         }
