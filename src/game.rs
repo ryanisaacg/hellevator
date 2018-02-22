@@ -168,6 +168,7 @@ impl GameScreen {
         }
         for e in self.enemies.iter_mut() {
             e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer);
+            e.pos = e.pos.constrain(GAME_AREA);
         }
         self.enemies.append(&mut self.enemy_buffer);
         for p in self.projectiles.iter_mut() {
