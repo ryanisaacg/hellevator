@@ -12,6 +12,7 @@ use quicksilver::input::*;
 use quicksilver::sound::*;
 use quicksilver::*;
 
+#[allow(unused_imports)]
 use rand::Rng;
 
 mod enemy;

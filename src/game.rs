@@ -112,6 +112,12 @@ const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
 const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
 
 impl GameScreen {
+    fn player_hit(player_down: &mut Option<Circle>, player_pos: &mut Circle) {
+        let mut rng = rand::thread_rng();
+        *player_down = Option::Some(*player_pos);
+        *player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), player_pos.radius);
+    }
+
     pub fn update(&mut self, window: &mut Window) {
         let keyboard = window.keyboard();
         if self.combat_roll > 0 {
@@ -167,7 +173,11 @@ impl GameScreen {
             }
         }
         for e in self.enemies.iter_mut() {
-            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer);
+            let result = e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer);
+            match result {
+                UpdateResult::HitPlayer => GameScreen::player_hit(&mut self.player_down, &mut self.player_pos),
+                UpdateResult::None => ()
+            }
             e.pos = e.pos.constrain(GAME_AREA);
         }
         self.enemies.append(&mut self.enemy_buffer);
@@ -209,11 +219,9 @@ impl GameScreen {
                     continue;
                 }
                 if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
-                    let mut rng = rand::thread_rng();
                     p.remove = true;
                     if p.proj_type == ProjectileType::EnemyBullet {
-                        self.player_down = Option::Some(self.player_pos);
-                        self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
+                        GameScreen::player_hit(&mut self.player_down, &mut self.player_pos);
                     } else if let ProjectileType::Web(_) = p.proj_type {
                         self.web_timer = 120;
                     }
