@@ -1,13 +1,22 @@
 use super::*;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum EnemyType {
+    BufferSpider(AttackState, Vector),
+    Egg(i32),
     BoomSpider(i32),
     WebSpider(i32),
     MamaSpider(i32, Vector),
     AngrySpider(i32),
     Spider(i32),
     Bat
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum AttackState {
+    Punch(i32),
+    Web(i32),
+    Summon(i32)
 }
 
 pub struct Enemy {
@@ -21,6 +30,8 @@ pub struct Enemy {
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
         let h = match enemy_type {
+            EnemyType::BufferSpider(_, _) => 250.0,
+            EnemyType::Egg(_) => 7.0,
             EnemyType::BoomSpider(_) => 99999.0,
             EnemyType::WebSpider(_) => 12.0,
             EnemyType::MamaSpider(_, _) => 25.0,
@@ -33,21 +44,82 @@ impl Enemy {
 
     pub fn gen_new() -> Enemy {
         let mut rng = rand::thread_rng();
-        let mut pos = Circle::new(0.0, 0.0, 9999999.0);
-        while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
-            pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2);
-        }
         let types = [/*EnemyType::Bat*/ EnemyType::Spider(0), EnemyType::AngrySpider(0), EnemyType::MamaSpider(0, Vector::zero()),
-                EnemyType::WebSpider(0), EnemyType::BoomSpider(0)];
+                EnemyType::WebSpider(0), EnemyType::BoomSpider(0), EnemyType::BufferSpider(AttackState::Punch(0), Vector::zero())];
         if let Some(enemy_type) = rng.choose(&types) {
+            let mut pos = Circle::new(0.0, 0.0, 9999999.0);
+            while pos.overlaps_rect(Rectangle::new(960.0/2.0 - 200.0, 540.0/2.0 - 100.0, 400.0, 200.0)) {
+                pos = Circle::new(rng.gen_range(0, 960), rng.gen_range(0, 540), PLAYER_RADIUS/2 * if let EnemyType::BufferSpider(_, _) = *enemy_type { 2 } else { 1 });
+            }
             Enemy::new(pos, *enemy_type)
         } else {
-            Enemy::new(pos, EnemyType::Bat)
+            Enemy::new(Circle::new(0.0, 0.0, (PLAYER_RADIUS/2) as f32), EnemyType::Bat)
         }
     }
 
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) {
         match self.enemy_type {
+            EnemyType::BufferSpider(ref mut attack_state, ref mut jump_direction) => {
+                let mut rng = rand::thread_rng();
+                let mut new_attack = false;
+                match *attack_state {
+                    AttackState::Punch(ref mut cycle) => {
+                        *cycle += 1;
+                        if *cycle % 60 == 29 {
+                            *jump_direction = Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize();
+                        }
+                        if *cycle % 60 > 29 {
+                            self.pos = self.pos.translate(*jump_direction * (65 - *cycle % 60) / 2);
+                        }
+                        if *cycle > 200 {
+                            new_attack = true;
+                        }
+                        if self.pos.overlaps_circ(player) {
+                            //TODO KILL PLAYER LIKE IN BOOM SPIDER
+                        }
+                    },
+                    AttackState::Web(ref mut cycle) => {
+                        *cycle += 1;
+                        if *cycle % 60 == 29 {
+                            *jump_direction = Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize();
+                        }
+                        if *cycle % 60 > 29 {
+                            self.pos = self.pos.translate(*jump_direction * (65 - *cycle % 60) / 2);
+                        }
+                        if *cycle > 60 {
+                            new_attack = true;
+                            for t in 0..5 {
+                                projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32),
+                                        Transform::rotate(t as f32 * 360.0/5.0 + 90.0) * (player.center() - self.pos.center()).normalize() * 4, ProjectileType::Web(60)));
+                            }
+                        }
+                    },
+                    AttackState::Summon(ref mut cycle) => {
+                        *cycle += 1;
+                        if *cycle == 90 {
+                            for i in 0..4 {
+                                enemy_buffer.push(Enemy::new(Circle::newv(self.pos.center() + Transform::rotate(i as f32*90.0 + 45.0) * Vector::x() * 16, PLAYER_RADIUS/3), EnemyType::Egg(0)));
+                            }
+                        }
+                        if *cycle > 120 {
+                            new_attack = true;
+                        }
+                    }
+                }
+                if new_attack {
+                    let attacks = [AttackState::Punch(0), AttackState::Web(0), AttackState::Summon(0)];
+                    if let Some(attack) = rng.choose(&attacks) {
+                        *attack_state = *attack;
+                    }
+                }
+            },
+            EnemyType::Egg(ref mut timer) => {
+                *timer += 1;
+                if *timer > 420 {
+                    self.remove = true;
+                    enemy_buffer.push(Enemy::new(self.pos, EnemyType::Spider(0)));
+                }
+            },
             EnemyType::BoomSpider(ref mut jump_cycle) => {
                 *jump_cycle = (*jump_cycle + 1) % 45;
                 if *jump_cycle > 29 {

@@ -267,6 +267,8 @@ impl Screen for GameScreen {
             };
             canvas.draw_image_trans(&self.shadow, e.pos.center() + Vector::y() * shadow_offset, Color::white(), double);
             match e.enemy_type {
+                EnemyType::BufferSpider(_, _) => canvas.draw_circle(e.pos, Color::red()),
+                EnemyType::Egg(_) => canvas.draw_circle(e.pos, Color::white()),
                 EnemyType::BoomSpider(_) => canvas.draw_circle(e.pos, Color::green()),
                 EnemyType::WebSpider(_) => canvas.draw_circle(e.pos, Color::red()),
                 EnemyType::MamaSpider(_, _) => canvas.draw_circle(e.pos, Color::purple()),

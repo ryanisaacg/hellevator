@@ -16,6 +16,7 @@ use rand::Rng;
 mod enemy;
 use enemy::Enemy;
 use enemy::EnemyType;
+use enemy::AttackState;
 mod projectile;
 use projectile::Projectile;
 use projectile::ProjectileType;
