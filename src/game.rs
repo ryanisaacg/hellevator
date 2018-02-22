@@ -30,6 +30,7 @@ pub struct GameScreen {
     pub death: Sound,
     pub enemy_death_particle: Image,
     pub egg: Image,
+    pub buffer_spider: Image,
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
@@ -76,6 +77,7 @@ impl GameScreen {
             wire: images[17].clone(),
             enemy_death_particle: images[18].clone(),
             egg: images[19].clone(),
+            buffer_spider: images[20].clone(),
             fire: sounds[0].clone(),
             wall_scroll: 0.0,
             shoot_cooldown: 0,
@@ -184,23 +186,6 @@ impl GameScreen {
                 }
             }
         }
-        if self.player_down == Option::None {
-            for p in self.projectiles.iter_mut() {
-                if p.proj_type == ProjectileType::PlayerBullet {
-                    continue;
-                }
-                if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
-                    let mut rng = rand::thread_rng();
-                    p.remove = true;
-                    if p.proj_type == ProjectileType::EnemyBullet {
-                        self.player_down = Option::Some(self.player_pos);
-                        self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
-                    } else if let ProjectileType::Web(_) = p.proj_type {
-                        self.web_timer = 120;
-                    }
-                }
-            }
-        }
         if let Some(player_down) = self.player_down {
             if player_down.overlaps_circ(self.player_pos) {
                 self.player_pos = player_down;
@@ -215,6 +200,22 @@ impl GameScreen {
                         rotational_velocity: 0.0,
                         lifetime: 20
                     })
+                }
+            }
+        } else {
+            for p in self.projectiles.iter_mut() {
+                if p.proj_type == ProjectileType::PlayerBullet {
+                    continue;
+                }
+                if p.pos.overlaps_circ(self.player_pos) && self.combat_roll <= 0 {
+                    let mut rng = rand::thread_rng();
+                    p.remove = true;
+                    if p.proj_type == ProjectileType::EnemyBullet {
+                        self.player_down = Option::Some(self.player_pos);
+                        self.player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), self.player_pos.radius);
+                    } else if let ProjectileType::Web(_) = p.proj_type {
+                        self.web_timer = 120;
+                    }
                 }
             }
         }
@@ -335,16 +336,18 @@ impl GameScreen {
         // Draw enemies
         draw_items.extend(self.enemies.iter().flat_map(|e| {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
-            let shadow_offset = match e.enemy_type {
-                EnemyType::Bat => 24,
-                EnemyType::MamaSpider(_, _) => 8,
-                _ => 4
+            let (shadow_offset, shadow_size) = match e.enemy_type {
+                EnemyType::Bat => (24, 1.0),
+                EnemyType::MamaSpider(_, _) => (8, 1.0),
+                EnemyType::Egg(_) => (8, 0.9),
+                EnemyType::BufferSpider(_, _) => (12, 2.0),
+                _ => (4, 1.0)
             };
-            once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double).with_z(shadow_z))
+            once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
-                    EnemyType::BufferSpider(_, _) => DrawCall::circle(e.pos).with_color(Color::red()),//canvas.draw_circle(e.pos, Color::red()),
+                    EnemyType::BufferSpider(_, _) => DrawCall::image(&self.buffer_spider, e.pos.center()).with_transform(double),
                     EnemyType::Egg(_) => DrawCall::image(&self.egg, e.pos.center()).with_transform(double),
                     EnemyType::MamaSpider(_, _) => DrawCall::image(&self.mama_spider, e.pos.center()).with_transform(double),
                     EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),

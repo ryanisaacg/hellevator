@@ -15,11 +15,11 @@ use quicksilver::*;
 use rand::Rng;
 
 mod enemy;
-use enemy::*
+use enemy::*;
 mod particle;
 use particle::Particle;
 mod projectile;
-use projectile::*
+use projectile::*;
 mod game;
 use game::*;
 
@@ -66,7 +66,8 @@ impl State for StateMachine {
                 Image::load("img/spider_skitter.png"),
                 Image::load("img/wire.png"),
                 Image::load("img/enemy_death_particle.png"),
-                Image::load("img/egg.png")])
+                Image::load("img/egg.png"),
+                Image::load("img/buffer_spider.png")])
             .join(join_all(vec![
                 Sound::load("snd/gun.wav"),
                 Sound::load("snd/bat-death.wav")])))
