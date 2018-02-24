@@ -110,17 +110,19 @@ const ADRENALINE_GAIN: f32 = 2.0; //Amount of adrenaline gained for each hit
 const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per tick
 const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
 const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
-const PLAYER_DEATH_PROJECTILES: u32 = 12; //The amount of projectiles spawned when the player dies
+const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned when the player dies
 
 impl GameScreen {
     fn player_hit(player_down: &mut Option<Circle>, player_pos: &mut Circle, projectiles: &mut Vec<Projectile>) {
-        let mut rng = rand::thread_rng();
-        *player_down = Option::Some(*player_pos);
-        for i in 0..PLAYER_DEATH_PROJECTILES {
-            let angle = 360.0 * i as f32 / PLAYER_DEATH_PROJECTILES as f32;
-            projectiles.push(Projectile::new(Circle::newv(player_pos.center(), (PLAYER_RADIUS/4) as f32), Vector::from_angle(angle) * 5, ProjectileType::PlayerBullet));
+        if *player_down == None {
+            let mut rng = rand::thread_rng();
+            *player_down = Option::Some(*player_pos);
+            for i in 0..PLAYER_DEATH_PROJECTILES {
+                let angle = 360.0 * i as f32 / PLAYER_DEATH_PROJECTILES as f32;
+                projectiles.push(Projectile::new(Circle::newv(player_pos.center(), (PLAYER_RADIUS/4) as f32), Vector::from_angle(angle) * 5, ProjectileType::PlayerBullet));
+            }
+            *player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), player_pos.radius);
         }
-        *player_pos = Circle::new(rng.gen_range(0.0, 960.0), rng.gen_range(0.0, 540.0), player_pos.radius);
     }
 
     pub fn update(&mut self, window: &mut Window) {
