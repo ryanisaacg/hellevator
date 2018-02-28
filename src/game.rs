@@ -42,6 +42,7 @@ pub struct GameScreen {
     pub cord_health: f32,
     pub gear_spin: f32,
     particles: Vec<Particle>,
+    player_velocity: Vector
 }
 
 impl GameScreen {
@@ -89,6 +90,7 @@ impl GameScreen {
             cord_health: CORD_HEALTH,
             gear_spin: 0.0,
             particles: Vec::new(),
+            player_velocity: Vector::zero()
         }
     }
 }
@@ -141,15 +143,19 @@ impl GameScreen {
         if self.web_timer > 0 {
             self.web_timer -= 1;
         }
-        let mut player_move = Vector::zero();
-        player_move.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
-        player_move.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
-        player_move.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
-        player_move.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+
+        let player_move = if self.combat_roll <= 0 {
+            let mut player_move = Vector::zero();
+            player_move.x += if keyboard[Key::D].is_down() { PLAYER_SPEED } else { 0.0 };
+            player_move.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
+            player_move.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
+            player_move.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
+            player_move *= if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+            self.player_velocity = player_move * COMBAT_ROLL_SPEED_FACTOR;
+            player_move
+        } else {
+            self.player_velocity
+        };
         self.player_pos = self.player_pos.translate(player_move).constrain(GAME_AREA);
 
         if keyboard[Key::LShift].is_down() && !keyboard[Key::D].is_down() && !keyboard[Key::W].is_down() && !keyboard[Key::A].is_down() && !keyboard[Key::S].is_down() &&
