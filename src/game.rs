@@ -43,6 +43,7 @@ pub struct GameScreen {
     pub cord_health: f32,
     pub gear_spin: f32,
     particles: Vec<Particle>,
+    player_velocity: Vector
 }
 
 impl GameScreen {
@@ -91,6 +92,7 @@ impl GameScreen {
             cord_health: CORD_HEALTH,
             gear_spin: 0.0,
             particles: Vec::new(),
+            player_velocity: Vector::zero()
         }
     }
 }
@@ -111,7 +113,7 @@ const REDIRECT_MAX_RANGE: f32 = 30.0; //Square radius of inaccuracy of right cli
 const ADRENALINE_GAIN: f32 = 2.0; //Amount of adrenaline gained for each hit
 const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per tick
 const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
-const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
+pub const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
 const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned when the player dies
 
 impl GameScreen {
@@ -143,15 +145,19 @@ impl GameScreen {
         if self.web_timer > 0 {
             self.web_timer -= 1;
         }
-        let mut player_move = Vector::zero();
-        player_move.x += if keyboard[Key::D].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
-        player_move.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
-        player_move.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
-        player_move.y += if keyboard[Key::S].is_down() { PLAYER_SPEED * if self.combat_roll > 0 { COMBAT_ROLL_SPEED_FACTOR } else { 1.0 } } else { 0.0 } *
-                if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+
+        let player_move = if self.combat_roll <= 0 {
+            let mut player_move = Vector::zero();
+            player_move.x += if keyboard[Key::D].is_down() { PLAYER_SPEED } else { 0.0 };
+            player_move.y += if keyboard[Key::W].is_down() { -PLAYER_SPEED } else { 0.0 };
+            player_move.x += if keyboard[Key::A].is_down() { -PLAYER_SPEED } else { 0.0 };
+            player_move.y += if keyboard[Key::S].is_down() { PLAYER_SPEED } else { 0.0 };
+            player_move *= if self.web_timer > 0 { WEB_SLOWDOWN } else { 1.0 };
+            self.player_velocity = player_move * COMBAT_ROLL_SPEED_FACTOR;
+            player_move
+        } else {
+            self.player_velocity
+        };
         self.player_pos = self.player_pos.translate(player_move).constrain(GAME_AREA);
 
         if keyboard[Key::LShift].is_down() && !keyboard[Key::D].is_down() && !keyboard[Key::W].is_down() && !keyboard[Key::A].is_down() && !keyboard[Key::S].is_down() &&
@@ -188,7 +194,6 @@ impl GameScreen {
                 UpdateResult::HitPlayer => GameScreen::player_hit(&mut self.player_down, &mut self.player_pos, &mut projectile_buffer),
                 UpdateResult::None => ()
             }
-            e.pos = e.pos.constrain(GAME_AREA);
         }
         self.enemies.append(&mut self.enemy_buffer);
         for p in self.projectiles.iter_mut() {
@@ -245,11 +250,11 @@ impl GameScreen {
             death.play();
             let amount_particles = match enemy.enemy_type {
                 EnemyType::SpiderLeg(_) => 0,
-                EnemyType::BufferSpider(_, _) => 42,
+                EnemyType::BufferSpider(_) => 42,
                 EnemyType::Egg(_) => 2,
                 EnemyType::BoomSpider(_) => 4,
                 EnemyType::WebSpider(_) => 6,
-                EnemyType::MamaSpider(_, _) => 12,
+                EnemyType::MamaSpider(_) => 12,
                 EnemyType::AngrySpider(_) => 5,
                 EnemyType::Spider(_, _) => 3,
                 EnemyType::Bat => 1
@@ -367,10 +372,10 @@ impl GameScreen {
             let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
             let (shadow_offset, shadow_size) = match e.enemy_type {
                 EnemyType::Bat => (24, 1.0),
-                EnemyType::MamaSpider(_, _) => (8, 1.0),
+                EnemyType::MamaSpider(_) => (8, 1.0),
                 EnemyType::Egg(_) => (8, 0.9),
-                EnemyType::BufferSpider(_, _) => (12, 2.0),
                 EnemyType::SpiderLeg(_) => (2, 2.0),
+                EnemyType::BufferSpider(_) => (12, 2.0),
                 _ => (4, 1.0)
             };
             once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
@@ -378,9 +383,9 @@ impl GameScreen {
                     EnemyType::SpiderLeg(_) => /*TODO Eventually draw leg when stabs*/DrawCall::rectangle(Rectangle::new(0, 0, 0, 0)),
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
-                    EnemyType::BufferSpider(_, _) => DrawCall::image(&self.buffer_spider, e.pos.center()).with_transform(double),
+                    EnemyType::BufferSpider(_) => DrawCall::image(&self.buffer_spider, e.pos.center()).with_transform(double),
                     EnemyType::Egg(_) => DrawCall::image(&self.egg, e.pos.center()).with_transform(double),
-                    EnemyType::MamaSpider(_, _) => DrawCall::image(&self.mama_spider, e.pos.center()).with_transform(double),
+                    EnemyType::MamaSpider(_) => DrawCall::image(&self.mama_spider, e.pos.center()).with_transform(double),
                     EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),
                     EnemyType::Spider(jump, frame) => DrawCall::image(if jump > 44 { &self.spider_skitter[(frame / 15) as usize] } else { &self.spider }, e.pos.center()).with_transform(double),
                     EnemyType::Bat => DrawCall::image(image, e.pos.center()).with_transform(double)
