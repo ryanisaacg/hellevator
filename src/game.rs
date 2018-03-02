@@ -4,6 +4,7 @@ pub struct GameScreen {
     pub player_down: Option<Circle>,
     pub player_pos: Circle,
     pub cord_pos: Circle,
+    pub boss: Boss,
     pub enemies: Vec<Enemy>,
     pub enemy_buffer: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
@@ -51,6 +52,7 @@ impl GameScreen {
             player_down: Option::None,
             player_pos: Circle::new(100, 100, PLAYER_RADIUS),
             cord_pos: Circle::new(960/2, 540/2, 48),
+            boss: Boss::None,
             enemies: Vec::new(),
             enemy_buffer: Vec::new(),
             projectiles: Vec::new(),
@@ -197,7 +199,7 @@ impl GameScreen {
                 continue;
             }
             for e in self.enemies.iter_mut() {
-                if p.pos.overlaps_circ(e.pos) {
+                if p.pos.overlaps_circ(e.pos) && !e.invulnerable {
                     e.health -= 2.0 + 2.0 * self.adrenaline / MAX_ADRENALINE;
                     e.remove = e.health <= 0.0;
                     p.remove = true;
@@ -242,6 +244,7 @@ impl GameScreen {
         clean_list(&mut self.enemies, |enemy| {
             death.play();
             let amount_particles = match enemy.enemy_type {
+                EnemyType::SpiderLeg(_) => 0,
                 EnemyType::BufferSpider(_, _) => 42,
                 EnemyType::Egg(_) => 2,
                 EnemyType::BoomSpider(_) => 4,
@@ -268,8 +271,16 @@ impl GameScreen {
         //Enemies by elevation function:
         //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
         self.elevation += 1;
-        while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
-            self.enemies.push(Enemy::gen_new());
+        // while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
+        //     self.enemies.push(Enemy::gen_new());
+        // }
+        if self.boss == Boss::None {
+            if self.elevation == 200 {
+                self.boss = Boss::Spider;
+                self.boss.setup(&mut self.enemies);
+            }
+        } else {
+            self.boss.update();
         }
         self.adrenaline -= ADRENALINE_DRAIN;
         if self.adrenaline < 0.0 {
@@ -359,10 +370,12 @@ impl GameScreen {
                 EnemyType::MamaSpider(_, _) => (8, 1.0),
                 EnemyType::Egg(_) => (8, 0.9),
                 EnemyType::BufferSpider(_, _) => (12, 2.0),
+                EnemyType::SpiderLeg(_) => (2, 2.0),
                 _ => (4, 1.0)
             };
             once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
+                    EnemyType::SpiderLeg(_) => /*TODO Eventually draw leg when stabs*/DrawCall::rectangle(Rectangle::new(0, 0, 0, 0)),
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
                     EnemyType::BufferSpider(_, _) => DrawCall::image(&self.buffer_spider, e.pos.center()).with_transform(double),

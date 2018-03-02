@@ -15,6 +15,8 @@ use quicksilver::*;
 #[allow(unused_imports)]
 use rand::Rng;
 
+mod boss;
+use boss::*;
 mod enemy;
 use enemy::*;
 mod particle;
