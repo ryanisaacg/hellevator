@@ -34,6 +34,23 @@ pub struct Enemy {
     pub velocity: Vector
 }
 
+const BOOM_SPIDER_JUMP_IMPULSE: f32 = 6.0;
+const BUFFER_SPIDER_PUNCH_IMPULSE: f32 = 16.0;
+const BUFFER_SPIDER_WEB_IMPULSE: f32 = 12.0;
+const MAMA_SPIDER_JUMP_IMPULSE: f32 = 8.0;
+const WEB_SPIDER_JUMP_IMPULSE: f32 = 8.0;
+const ANGRY_SPIDER_JUMP_IMPULSE: f32 = 8.0;
+const SPIDER_JUMP_IMPULSE: f32 = 8.0;
+const FRICTION: f32 = 0.9;
+
+fn impulse_towards(start: Vector, target: Vector, magnitude: f32, angle_variance: f32) -> Vector {
+    let mut rng = rand::thread_rng();
+    let angle = rng.gen_range(-angle_variance, angle_variance);
+    let rotation = Transform::rotate(angle);
+    rotation * (target - start).with_len(magnitude)
+}
+
+
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
         let h = match enemy_type {
@@ -64,6 +81,7 @@ impl Enemy {
         }
     }
 
+
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) -> UpdateResult {
         let mut result = UpdateResult::None;
         match self.enemy_type {
@@ -74,10 +92,7 @@ impl Enemy {
                     AttackState::Punch(ref mut cycle) => {
                         *cycle += 1;
                         if *cycle % 60 == 29 {
-                            self.velocity = Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize();
-                        }
-                        if *cycle % 60 > 29 {
-                            self.pos = self.pos.translate(self.velocity * (65 - *cycle % 60) / 2);
+                            self.velocity = impulse_towards(self.pos.center(), player.center(), BUFFER_SPIDER_PUNCH_IMPULSE, 30.0);
                         }
                         if *cycle > 200 {
                             new_attack = true;
@@ -89,10 +104,7 @@ impl Enemy {
                     AttackState::Web(ref mut cycle) => {
                         *cycle += 1;
                         if *cycle % 60 == 29 {
-                            self.velocity = Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize();
-                        }
-                        if *cycle % 60 > 29 {
-                            self.pos = self.pos.translate(self.velocity * (65 - *cycle % 60) / 2);
+                            self.velocity = impulse_towards(self.pos.center(), player.center(), BUFFER_SPIDER_WEB_IMPULSE, 30.0);
                         }
                         if *cycle > 60 {
                             new_attack = true;
@@ -130,9 +142,8 @@ impl Enemy {
             },
             EnemyType::BoomSpider(ref mut jump_cycle) => {
                 *jump_cycle = (*jump_cycle + 1) % 45;
-                if *jump_cycle > 29 {
-                    let mut rng = rand::thread_rng();
-                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (cord_pos.center() - self.pos.center()).normalize() * (45 - *jump_cycle) / 2);
+                if *jump_cycle == 29 {
+                    self.velocity = impulse_towards(self.pos.center(), player.center(), BOOM_SPIDER_JUMP_IMPULSE, 30.0);
                 }
                 if self.pos.overlaps_circ(cord_pos) {
                     self.health -= 1.0;
@@ -149,9 +160,8 @@ impl Enemy {
             },
             EnemyType::WebSpider(ref mut jump_cycle) => {
                 *jump_cycle = (*jump_cycle + 1) % 90;
-                if *jump_cycle > 74 {
-                    let mut rng = rand::thread_rng();
-                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize() * (90 - *jump_cycle) / 2);
+                if *jump_cycle == 74 {
+                    self.velocity = impulse_towards(self.pos.center(), player.center(), WEB_SPIDER_JUMP_IMPULSE, 30.0);
                 }
                 if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 300.0*300.0 {
                     projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::Web(0)));
@@ -161,9 +171,8 @@ impl Enemy {
                 let mut rng = rand::thread_rng();
                 *jump_cycle = (*jump_cycle + 1) % 150;
                 if *jump_cycle == 134 {
-                    self.velocity = (rng.gen::<Vector>() - Vector::one() * 0.5).normalize();
-                } else if *jump_cycle > 134 {
-                    self.pos = self.pos.translate(self.velocity * (150 - *jump_cycle) / 2);
+                    let target = rng.gen::<Vector>() - Vector::one() * 0.5;
+                    self.velocity = impulse_towards(self.pos.center(), target, MAMA_SPIDER_JUMP_IMPULSE, 0.1);
                 }
                 if *jump_cycle >= 149 && rng.gen_range(0.0, 1.0) < 0.3 {
                     let types = [EnemyType::Spider(0, 0), EnemyType::AngrySpider(0)];
@@ -174,9 +183,8 @@ impl Enemy {
             },
             EnemyType::AngrySpider(ref mut jump_cycle) => {
                 *jump_cycle = (*jump_cycle + 1) % 90;
-                if *jump_cycle > 74 {
-                    let mut rng = rand::thread_rng();
-                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (player.center() - self.pos.center()).normalize() * (90 - *jump_cycle) / 2);
+                if *jump_cycle == 74 {
+                    self.velocity = impulse_towards(self.pos.center(), player.center(), ANGRY_SPIDER_JUMP_IMPULSE, 30.0);
                 }
                 if *jump_cycle >= 89 && (self.pos.center() - player.center()).len2() < 200.0*200.0 {
                     projectiles.push(Projectile::new(Circle::newv(self.pos.center(), (PLAYER_RADIUS/6) as f32), (player.center() - self.pos.center()).normalize() * 4, ProjectileType::EnemyBullet));
@@ -184,9 +192,8 @@ impl Enemy {
             },
             EnemyType::Spider(ref mut jump_cycle, ref mut frame) => {
                 *jump_cycle = (*jump_cycle + 1) % 60;
-                if *jump_cycle > 44 {
-                    let mut rng = rand::thread_rng();
-                    self.pos = self.pos.translate(Transform::rotate(rng.gen_range(-30.0, 30.0)) * (cord_pos.center() - self.pos.center()).normalize() * (60 - *jump_cycle) / 2);
+                if *jump_cycle == 44 {
+                    self.velocity = impulse_towards(self.pos.center(), player.center(), SPIDER_JUMP_IMPULSE, 30.0);
                     *frame = (*frame + 1) % 30;
                 }
                 if self.pos.overlaps_circ(cord_pos) {
@@ -205,6 +212,7 @@ impl Enemy {
                 }
             }
         }
+        self.velocity *= FRICTION;
         self.pos = self.pos.translate(self.velocity).constrain(GAME_AREA);
         result
     }
