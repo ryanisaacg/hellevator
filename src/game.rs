@@ -113,6 +113,7 @@ const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per t
 const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
 pub const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
 const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned when the player dies
+const BULLET_KNOCKBACK: f32 = 6.0;
 
 impl GameScreen {
     fn player_hit(player_down: &mut Option<Circle>, player_pos: &mut Circle, projectiles: &mut Vec<Projectile>) {
@@ -205,6 +206,7 @@ impl GameScreen {
                 if p.pos.overlaps_circ(e.pos) {
                     e.health -= 2.0 + 2.0 * self.adrenaline / MAX_ADRENALINE;
                     e.remove = e.health <= 0.0;
+                    e.velocity += p.vel.with_len(BULLET_KNOCKBACK);
                     p.remove = true;
                     self.adrenaline += ADRENALINE_GAIN;
                 }
