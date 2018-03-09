@@ -3,6 +3,7 @@ use game::GAME_AREA;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum EnemyType {
+    GearLeg,
     SpiderLeg(i32),
     BufferSpider(AttackState),
     Egg(i32),
@@ -39,6 +40,7 @@ pub struct Enemy {
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
         let h = match enemy_type {
+            EnemyType::GearLeg => 175.0,
             EnemyType::SpiderLeg(_) => 100.0,
             EnemyType::BufferSpider(_) => 250.0,
             EnemyType::Egg(_) => 7.0,
@@ -71,13 +73,18 @@ impl Enemy {
     pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) -> UpdateResult {
         let mut result = UpdateResult::None;
         match self.enemy_type {
+            EnemyType::GearLeg => {
+
+            },
             EnemyType::SpiderLeg(ref mut cycle) => {
                 *cycle += 1;
                 if *cycle < 150 {
                     self.pos = self.pos.translate(((player.center() - self.pos.center()) + Transform::rotate(*cycle * 6) * Vector::x() * 20) / (16 + *cycle/10));
                 }
                 if *cycle >= 210 {
-                    //TODO Attack
+                    if self.pos.overlaps_circ(player) {
+                        result = UpdateResult::HitPlayer;
+                    }
                     *cycle = 0;
                 }
             },

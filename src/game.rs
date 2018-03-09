@@ -249,6 +249,7 @@ impl GameScreen {
         clean_list(&mut self.enemies, |enemy| {
             death.play();
             let amount_particles = match enemy.enemy_type {
+                EnemyType::GearLeg => 60,
                 EnemyType::SpiderLeg(_) => 0,
                 EnemyType::BufferSpider(_) => 42,
                 EnemyType::Egg(_) => 2,
@@ -275,7 +276,16 @@ impl GameScreen {
         clean_list(&mut self.projectiles, |_|());
         //Enemies by elevation function:
         //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
-        self.elevation += 1;
+        let mut dont_move = false;
+        for e in self.enemies.iter_mut() {
+            if e.enemy_type == EnemyType::GearLeg {
+                dont_move = true;
+                break;
+            }
+        }
+        if !dont_move {
+            self.elevation += 1;
+        }
         // while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
         //     self.enemies.push(Enemy::gen_new());
         // }
@@ -380,6 +390,7 @@ impl GameScreen {
             };
             once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
+                    EnemyType::GearLeg => DrawCall::circle(e.pos).with_color(Color::orange()),
                     EnemyType::SpiderLeg(_) => /*TODO Eventually draw leg when stabs*/DrawCall::rectangle(Rectangle::new(0, 0, 0, 0)),
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
