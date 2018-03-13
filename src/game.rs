@@ -7,30 +7,6 @@ pub struct GameScreen {
     pub enemies: Vec<Enemy>,
     pub enemy_buffer: Vec<Enemy>,
     pub projectiles: Vec<Projectile>,
-    pub player_image: Image,
-    pub crosshair: Image,
-    pub gun: Image,
-    pub wood: Image,
-    pub shadow: Image,
-    pub wall: Image,
-    pub fire: Sound,
-    pub bat_up: Image,
-    pub bat_down: Image,
-    pub medic: Image,
-    pub spider: Image,
-    pub angry_spider: Image,
-    pub web_spider: Image,
-    pub spiderweb: Image,
-    pub explode_spider: Image,
-    pub mama_spider: Image,
-    pub spider_skitter: [Image; 2],
-    pub wire: Image,
-    pub plus: Image,
-    pub gear: Image,
-    pub death: Sound,
-    pub enemy_death_particle: Image,
-    pub egg: Image,
-    pub buffer_spider: Image,
     pub bat_frame: u32,
     pub wall_scroll: f32,
     pub shoot_cooldown: i32,
@@ -42,57 +18,8 @@ pub struct GameScreen {
     pub cord_health: f32,
     pub gear_spin: f32,
     particles: Vec<Particle>,
-    player_velocity: Vector
-}
-
-impl GameScreen {
-    pub fn new(loaded: (Vec<Image>, Vec<Sound>)) -> GameScreen {
-        let (images, sounds) = loaded;
-        GameScreen {
-            player_down: Option::None,
-            player_pos: Circle::new(100, 100, PLAYER_RADIUS),
-            cord_pos: Circle::new(960/2, 540/2, 48),
-            enemies: Vec::new(),
-            enemy_buffer: Vec::new(),
-            projectiles: Vec::new(),
-            player_image: images[0].clone(),
-            crosshair: images[1].clone(),
-            gun: images[2].clone(),
-            wood: images[3].clone(),
-            shadow: images[4].clone(),
-            wall: images[5].clone(),
-            bat_up: images[6].subimage(Rectangle::new(0, 0, 16, 16)),
-            bat_down: images[6].subimage(Rectangle::new(16, 0, 16, 16)),
-            medic: images[7].clone(),
-            death: sounds[1].clone(),
-            bat_frame: 0,
-            spider: images[8].clone(),
-            angry_spider: images[9].clone(),
-            gear: images[10].clone(),
-            web_spider: images[11].clone(),
-            spiderweb: images[12].clone(),
-            explode_spider: images[13].clone(),
-            mama_spider: images[14].clone(),
-            plus: images[15].clone(),
-            spider_skitter: [images[16].subimage(Rectangle::new_sized(12, 12)), images[16].subimage(Rectangle::new(12, 0, 12, 12))],
-            wire: images[17].clone(),
-            enemy_death_particle: images[18].clone(),
-            egg: images[19].clone(),
-            buffer_spider: images[20].clone(),
-            fire: sounds[0].clone(),
-            wall_scroll: 0.0,
-            shoot_cooldown: 0,
-            roll_cooldown: 0,
-            combat_roll: 0,
-            adrenaline: 0.0,
-            web_timer: 0,
-            elevation: 0,
-            cord_health: CORD_HEALTH,
-            gear_spin: 0.0,
-            particles: Vec::new(),
-            player_velocity: Vector::zero()
-        }
-    }
+    player_velocity: Vector,
+    assets: Assets
 }
 
 const MAX_ADRENALINE: f32 = 100.0; //Internal 100% adrenaline
@@ -115,6 +42,30 @@ pub const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, heig
 const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned when the player dies
 
 impl GameScreen {
+    pub fn new(assets: Assets) -> GameScreen {
+        GameScreen {
+            player_down: Option::None,
+            player_pos: Circle::new(100, 100, PLAYER_RADIUS),
+            cord_pos: Circle::new(960/2, 540/2, 48),
+            enemies: Vec::new(),
+            enemy_buffer: Vec::new(),
+            projectiles: Vec::new(),
+            bat_frame: 0,
+            wall_scroll: 0.0,
+            shoot_cooldown: 0,
+            roll_cooldown: 0,
+            combat_roll: 0,
+            adrenaline: 0.0,
+            web_timer: 0,
+            elevation: 0,
+            cord_health: CORD_HEALTH,
+            gear_spin: 0.0,
+            particles: Vec::new(),
+            player_velocity: Vector::zero(),
+            assets
+        }
+    }
+
     fn player_hit(player_down: &mut Option<Circle>, player_pos: &mut Circle, projectiles: &mut Vec<Projectile>) {
         if *player_down == None {
             let mut rng = rand::thread_rng();
@@ -164,7 +115,7 @@ impl GameScreen {
         }
         if window.mouse()[MouseButton::Left].is_down() && self.shoot_cooldown <= 0 && self.player_down == Option::None {
             let mut rng = rand::thread_rng();
-            self.fire.play();
+            self.assets.fire.play();
             self.projectiles.push(Projectile::new(Circle::newv(self.player_pos.center(), (PLAYER_RADIUS/4) as f32),
                     Transform::rotate(rng.gen_range(-(MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE - MIN_GUN_SPREAD,
                     (MAX_GUN_SPREAD - MIN_GUN_SPREAD) * self.adrenaline / MAX_ADRENALINE + MIN_GUN_SPREAD))
@@ -217,7 +168,7 @@ impl GameScreen {
                 let mut rng = rand::thread_rng();
                 for _ in 0..10 {
                     self.particles.push(Particle {
-                        image: self.plus.clone(),
+                        image: self.assets.plus.clone(),
                         pos: self.player_pos.center(),
                         velocity: (rng.gen::<Vector>() - Vector::new(0.5, 0.5)) * 6,
                         rotation: 0.0,
@@ -241,9 +192,9 @@ impl GameScreen {
                 }
             }
         }
-        let death = self.death.clone();
+        let death = self.assets.death.clone();
         let mut particles = Vec::with_capacity(0);
-        let death_particle = self.enemy_death_particle.clone();
+        let death_particle = self.assets.enemy_death_particle.clone();
         clean_list(&mut self.enemies, |enemy| {
             death.play();
             let amount_particles = match enemy.enemy_type {
@@ -311,32 +262,32 @@ impl GameScreen {
             DrawCall::image(&x.image, x.pos).with_transform(Transform::rotate(x.rotation))));
         //Draw walls
         draw_items.extend(iproduct!(0..30, 0..2).map(|(x, y)|
-                DrawCall::image(&self.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
+                DrawCall::image(&self.assets.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
                     .with_transform(double)
                     .with_z(wall_z)));
         let left_gear_rotation = Transform::rotate(-self.gear_spin) * double;
         let right_gear_rotation = Transform::rotate(self.gear_spin) * double;
         //Draw the wire
-        draw_items.extend((0..5).map(|y| DrawCall::image(&self.wire, Vector::new(480.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
+        draw_items.extend((0..5).map(|y| DrawCall::image(&self.assets.wire, Vector::new(480.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
                     .with_transform(double)
                     .with_z(y * 64 + 50)));
         //Draw gears
         draw_items.extend_from_slice(&[
-            DrawCall::image(&self.gear, Vector::new(26, 64)).with_transform(left_gear_rotation).with_z(back_gear_z),
-            DrawCall::image(&self.gear, Vector::new(960 - 26, 64)).with_transform(right_gear_rotation).with_z(back_gear_z),
-            DrawCall::image(&self.gear, Vector::new(26, 550)).with_transform(left_gear_rotation).with_z(front_gear_z),
-            DrawCall::image(&self.gear, Vector::new(960 - 26, 550)).with_transform(right_gear_rotation).with_z(front_gear_z)
+            DrawCall::image(&self.assets.gear, Vector::new(26, 64)).with_transform(left_gear_rotation).with_z(back_gear_z),
+            DrawCall::image(&self.assets.gear, Vector::new(960 - 26, 64)).with_transform(right_gear_rotation).with_z(back_gear_z),
+            DrawCall::image(&self.assets.gear, Vector::new(26, 550)).with_transform(left_gear_rotation).with_z(front_gear_z),
+            DrawCall::image(&self.assets.gear, Vector::new(960 - 26, 550)).with_transform(right_gear_rotation).with_z(front_gear_z)
         ]);
         draw_items.extend(iproduct!(0..30, 2..17).map(|(x, y)|
-                DrawCall::image(&self.wood, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0))
+                DrawCall::image(&self.assets.wood, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0))
                     .with_transform(double)));
         //Draw the player
         match self.player_down {
             Option::Some(player_down) => draw_items.extend_from_slice(&[
-                DrawCall::image(&self.shadow, player_down.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
-                DrawCall::image(&self.player_image, player_down.center()).with_transform(double).with_z(player_down.center().y),
-                DrawCall::image(&self.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
-                DrawCall::image(&self.medic, self.player_pos.center()).with_transform(double).with_z(self.player_pos.center().y)
+                DrawCall::image(&self.assets.shadow, player_down.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
+                DrawCall::image(&self.assets.player_image, player_down.center()).with_transform(double).with_z(player_down.center().y),
+                DrawCall::image(&self.assets.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
+                DrawCall::image(&self.assets.medic, self.player_pos.center()).with_transform(double).with_z(self.player_pos.center().y)
             ]),
             Option::None => {
                 let point = window.mouse().pos() - self.player_pos.center();
@@ -348,17 +299,17 @@ impl GameScreen {
                                         * Transform::scale(scale)
                                         * Transform::translate(Vector::new(12, 0));
                 draw_items.extend_from_slice(&[
-                    DrawCall::image(&self.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
-                    DrawCall::image(&self.player_image, self.player_pos.center())
+                    DrawCall::image(&self.assets.shadow, self.player_pos.center() + Vector::y() * 24).with_transform(double).with_z(shadow_z),
+                    DrawCall::image(&self.assets.player_image, self.player_pos.center())
                         .with_color(if self.web_timer > 0 { Color { r: 1.5, g: 1.5, b: 1.5, a: 1.0 } } else { Color::white() })
                         .with_transform(Transform::rotate(self.combat_roll as f32 / 15.0 * 360.0) * double).with_z(self.player_pos.center().y),
-                    DrawCall::image(&self.gun, self.player_pos.center()).with_transform(gun_transform).with_z(self.player_pos.center().y)
+                    DrawCall::image(&self.assets.gun, self.player_pos.center()).with_transform(gun_transform).with_z(self.player_pos.center().y)
                 ])
             }
         }
         // Draw enemies
         draw_items.extend(self.enemies.iter().flat_map(|e| {
-            let image = if self.bat_frame > 30 { &self.bat_up } else { &self.bat_down };
+            let image = if self.bat_frame > 30 { &self.assets.bat_up } else { &self.assets.bat_down };
             let (shadow_offset, shadow_size) = match e.enemy_type {
                 EnemyType::Bat => (24, 1.0),
                 EnemyType::MamaSpider(_) => (8, 1.0),
@@ -366,15 +317,15 @@ impl GameScreen {
                 EnemyType::BufferSpider(_) => (12, 2.0),
                 _ => (4, 1.0)
             };
-            once(DrawCall::image(&self.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
+            once(DrawCall::image(&self.assets.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
-                    EnemyType::BoomSpider(_) => DrawCall::image(&self.explode_spider, e.pos.center()).with_transform(double),
-                    EnemyType::WebSpider(_) => DrawCall::image(&self.web_spider, e.pos.center()).with_transform(double),
-                    EnemyType::BufferSpider(_) => DrawCall::image(&self.buffer_spider, e.pos.center()).with_transform(double),
-                    EnemyType::Egg(_) => DrawCall::image(&self.egg, e.pos.center()).with_transform(double),
-                    EnemyType::MamaSpider(_) => DrawCall::image(&self.mama_spider, e.pos.center()).with_transform(double),
-                    EnemyType::AngrySpider(_) => DrawCall::image(&self.angry_spider, e.pos.center()).with_transform(double),
-                    EnemyType::Spider(jump, frame) => DrawCall::image(if jump > 44 { &self.spider_skitter[(frame / 15) as usize] } else { &self.spider }, e.pos.center()).with_transform(double),
+                    EnemyType::BoomSpider(_) => DrawCall::image(&self.assets.explode_spider, e.pos.center()).with_transform(double),
+                    EnemyType::WebSpider(_) => DrawCall::image(&self.assets.web_spider, e.pos.center()).with_transform(double),
+                    EnemyType::BufferSpider(_) => DrawCall::image(&self.assets.buffer_spider, e.pos.center()).with_transform(double),
+                    EnemyType::Egg(_) => DrawCall::image(&self.assets.egg, e.pos.center()).with_transform(double),
+                    EnemyType::MamaSpider(_) => DrawCall::image(&self.assets.mama_spider, e.pos.center()).with_transform(double),
+                    EnemyType::AngrySpider(_) => DrawCall::image(&self.assets.angry_spider, e.pos.center()).with_transform(double),
+                    EnemyType::Spider(jump, frame) => DrawCall::image(if jump > 44 { &self.assets.spider_skitter[(frame / 15) as usize] } else { &self.assets.spider }, e.pos.center()).with_transform(double),
                     EnemyType::Bat => DrawCall::image(image, e.pos.center()).with_transform(double)
                 }.with_z(e.pos.y)))
         }));
@@ -383,14 +334,14 @@ impl GameScreen {
             ProjectileType::PlayerBullet => DrawCall::circle(projectile.pos).with_color(Color::yellow()).with_z(projectile_z),
             ProjectileType::EnemyBullet => DrawCall::circle(projectile.pos).with_color(Color::red()).with_z(projectile_z),
             ProjectileType::Web(ticks) if ticks <= 90 => DrawCall::circle(projectile.pos).with_color(Color::white()).with_z(projectile_z),
-            ProjectileType::Web(_) => DrawCall::image(&self.spiderweb, projectile.pos.center()).with_transform(double).with_z(projectile_z)
+            ProjectileType::Web(_) => DrawCall::image(&self.assets.spiderweb, projectile.pos.center()).with_transform(double).with_z(projectile_z)
         }));
         // Draw UI / misc
         draw_items.extend_from_slice(&[
             DrawCall::circle(self.cord_pos).with_color(Color::black()).with_z(center_z),
             DrawCall::rectangle(Rectangle::new(960.0/2.0-200.0, 10.0, 400.0 * self.cord_health / CORD_HEALTH, 20.0)).with_color(Color::green()).with_z(ui_z),
             DrawCall::rectangle(Rectangle::new(960.0/2.0-100.0, 35.0, 200.0 * self.adrenaline / MAX_ADRENALINE, 15.0)).with_color(Color::blue()).with_z(ui_z),
-            DrawCall::image(&self.crosshair, window.mouse().pos()).with_transform(double).with_z(ui_z)
+            DrawCall::image(&self.assets.crosshair, window.mouse().pos()).with_transform(double).with_z(ui_z)
         ]);
         window.draw(draw_items.iter());
     }

@@ -15,6 +15,8 @@ use quicksilver::*;
 #[allow(unused_imports)]
 use rand::Rng;
 
+mod assets;
+use assets::*;
 mod enemy;
 use enemy::*;
 mod particle;
@@ -39,6 +41,7 @@ enum StateMachine {
     Game(GameScreen)
 }
 
+
 impl State for StateMachine {
     fn configure() -> Window {
         WindowBuilder::new()
@@ -47,31 +50,7 @@ impl State for StateMachine {
     }
 
     fn new() -> StateMachine {
-         StateMachine::Loading(join_all(vec![
-                Image::load("img/ah_stand.png"),
-                Image::load("img/crosshair.png"),
-                Image::load("img/gun.png"),
-                Image::load("img/wood.png"),
-                Image::load("img/shadow.png"),
-                Image::load("img/wall.png"),
-                Image::load("img/bat.png"),
-                Image::load("img/md_stand.png"),
-                Image::load("img/spider.png"),
-                Image::load("img/angry_spider.png"),
-                Image::load("img/gear.png"),
-                Image::load("img/web_spider.png"),
-                Image::load("img/spiderweb.png"),
-                Image::load("img/explode_spider.png"),
-                Image::load("img/mama_spider.png"),
-                Image::load("img/plus.png"),
-                Image::load("img/spider_skitter.png"),
-                Image::load("img/wire.png"),
-                Image::load("img/enemy_death_particle.png"),
-                Image::load("img/egg.png"),
-                Image::load("img/buffer_spider.png")])
-            .join(join_all(vec![
-                Sound::load("snd/gun.wav"),
-                Sound::load("snd/bat-death.wav")])))
+         StateMachine::Loading(Assets::load())
     }
 
     fn update(&mut self, window: &mut Window) {
@@ -84,7 +63,7 @@ impl State for StateMachine {
             Async::NotReady
         };
         if let Async::Ready(loaded) = loaded_assets {
-            *self = StateMachine::Game(GameScreen::new(loaded));
+            *self = StateMachine::Game(GameScreen::new(Assets::new(loaded)));
         }
         if let &mut StateMachine::Game(ref mut state) = self {
             state.update(window);

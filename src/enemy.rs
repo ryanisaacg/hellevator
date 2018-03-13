@@ -34,6 +34,9 @@ pub struct Enemy {
     pub velocity: Vector
 }
 
+const BOOM_SPIDER_PARTICLES: u32 = 60; //The amount of particles spawned when the spider dies
+
+
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
         let h = match enemy_type {
