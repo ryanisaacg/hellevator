@@ -17,6 +17,8 @@ use rand::Rng;
 
 mod assets;
 use assets::*;
+mod boss;
+use boss::*;
 mod enemy;
 use enemy::*;
 mod particle;
