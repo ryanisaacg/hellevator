@@ -1,6 +1,6 @@
 extern crate futures;
 #[macro_use] extern crate itertools;
-#[macro_use] extern crate quicksilver;
+extern crate quicksilver;
 extern crate rand;
 
 use futures::{Async, Future};
@@ -81,4 +81,7 @@ impl State for StateMachine {
     }
 }
 
-run!(StateMachine);
+fn main() {
+    run::<StateMachine>();
+}
+
