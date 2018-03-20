@@ -1,23 +1,20 @@
 use super::*;
 
 pub struct GameScreen {
-    pub player_down: Option<Circle>,
-    pub player_pos: Circle,
-    pub cord_pos: Circle,
-    pub boss: Boss,
-    pub enemies: Vec<Enemy>,
-    pub enemy_buffer: Vec<Enemy>,
-    pub projectiles: Vec<Projectile>,
-    pub bat_frame: u32,
-    pub wall_scroll: f32,
-    pub shoot_cooldown: i32,
-    pub combat_roll: i32,
-    pub roll_cooldown: i32,
-    pub adrenaline: f32,
-    pub web_timer: i32,
-    pub elevation: i32,
-    pub cord_health: f32,
-    pub gear_spin: f32,
+    player_down: Option<Circle>,
+    player_pos: Circle,
+    cord_pos: Circle,
+    boss: Boss,
+    enemies: Vec<Enemy>,
+    enemy_buffer: Vec<Enemy>,
+    projectiles: Vec<Projectile>,
+    shoot_cooldown: i32,
+    combat_roll: i32,
+    roll_cooldown: i32,
+    adrenaline: f32,
+    web_timer: i32,
+    elevation: i32,
+    cord_health: f32,
     particles: Vec<Particle>,
     player_velocity: Vector,
     assets: Assets
@@ -52,8 +49,6 @@ impl GameScreen {
             enemies: Vec::new(),
             enemy_buffer: Vec::new(),
             projectiles: Vec::new(),
-            bat_frame: 0,
-            wall_scroll: 0.0,
             shoot_cooldown: 0,
             roll_cooldown: 0,
             combat_roll: 0,
@@ -61,7 +56,6 @@ impl GameScreen {
             web_timer: 0,
             elevation: 0,
             cord_health: CORD_HEALTH,
-            gear_spin: 0.0,
             particles: Vec::new(),
             player_velocity: Vector::zero(),
             assets
@@ -261,10 +255,15 @@ impl GameScreen {
             particle.lifetime -= 1;
         }
         clean_list(&mut self.particles, |_|());
-        self.wall_scroll = (self.wall_scroll + 0.1) % 64.0;
-        self.bat_frame = (self.bat_frame + 1) % 60;
-        self.gear_spin = (self.gear_spin + 0.25) % 360.0;
         self.projectiles.extend(projectile_buffer);
+    }
+
+    fn wall_scroll(&self) -> f32 {
+        (self.elevation as f32 * 0.1) % 64.0
+    }
+
+    fn gear_spin(&self) -> f32 {
+        (self.elevation as f32 * 0.25) % 360.0
     }
 
     pub fn draw(&mut self, window: &mut Window) {
@@ -283,13 +282,13 @@ impl GameScreen {
             DrawCall::image(&x.image, x.pos).with_transform(Transform::rotate(x.rotation))));
         //Draw walls
         draw_items.extend(iproduct!(0..30, 0..2).map(|(x, y)|
-                DrawCall::image(&self.assets.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
+                DrawCall::image(&self.assets.wall, Vector::new(x as f32 * 64.0 - 32.0, y as f32 * 64.0 - 32.0 + self.wall_scroll()))
                     .with_transform(double)
                     .with_z(wall_z)));
-        let left_gear_rotation = Transform::rotate(-self.gear_spin) * double;
-        let right_gear_rotation = Transform::rotate(self.gear_spin) * double;
+        let left_gear_rotation = Transform::rotate(-self.gear_spin()) * double;
+        let right_gear_rotation = Transform::rotate(self.gear_spin()) * double;
         //Draw the wire
-        draw_items.extend((0..5).map(|y| DrawCall::image(&self.assets.wire, Vector::new(480.0, y as f32 * 64.0 - 32.0 + self.wall_scroll))
+        draw_items.extend((0..5).map(|y| DrawCall::image(&self.assets.wire, Vector::new(480.0, y as f32 * 64.0 - 32.0 + self.wall_scroll()))
                     .with_transform(double)
                     .with_z(y * 64 + 50)));
         //Draw gears
@@ -330,7 +329,6 @@ impl GameScreen {
         }
         // Draw enemies
         draw_items.extend(self.enemies.iter().flat_map(|e| {
-            let image = if self.bat_frame > 30 { &self.assets.bat_up } else { &self.assets.bat_down };
             let (shadow_offset, shadow_size) = match e.enemy_type {
                 EnemyType::Bat => (24, 1.0),
                 EnemyType::MamaSpider(_) => (8, 1.0),
@@ -350,7 +348,7 @@ impl GameScreen {
                     EnemyType::MamaSpider(_) => DrawCall::image(&self.assets.mama_spider, e.pos.center()).with_transform(double),
                     EnemyType::AngrySpider(_) => DrawCall::image(&self.assets.angry_spider, e.pos.center()).with_transform(double),
                     EnemyType::Spider(jump, frame) => DrawCall::image(if jump > 44 { &self.assets.spider_skitter[(frame / 15) as usize] } else { &self.assets.spider }, e.pos.center()).with_transform(double),
-                    EnemyType::Bat => DrawCall::image(image, e.pos.center()).with_transform(double)
+                    EnemyType::Bat => DrawCall::image(&self.assets.bat_up, e.pos.center()).with_transform(double)
                 }.with_z(e.pos.y)))
         }));
         // Draw projectiles
