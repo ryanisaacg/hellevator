@@ -24,7 +24,7 @@ pub enum AttackState {
 
 pub enum UpdateResult {
     HitPlayer,
-    None
+    BoomSpiderDetonate,
 }
 
 pub struct Enemy {
@@ -36,8 +36,6 @@ pub struct Enemy {
     pub remove: bool,
     pub velocity: Vector
 }
-
-const BOOM_SPIDER_PARTICLES: u32 = 60; //The amount of particles spawned when the spider dies
 
 
 impl Enemy {
@@ -73,8 +71,7 @@ impl Enemy {
         }
     }
 
-    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>) -> UpdateResult {
-        let mut result = UpdateResult::None;
+    pub fn update(&mut self, player: Circle, cord_pos: Circle, cord_health: &mut f32, projectiles: &mut Vec<Projectile>, enemy_buffer: &mut Vec<Enemy>, results: &mut Vec<UpdateResult>) {
         match self.enemy_type {
             EnemyType::GearLeg => {
 
@@ -86,7 +83,7 @@ impl Enemy {
                 }
                 if *cycle >= 210 {
                     if self.pos.overlaps_circ(player) {
-                        result = UpdateResult::HitPlayer;
+                        results.push(UpdateResult::HitPlayer);
                     }
                     *cycle = 0;
                 }
@@ -107,7 +104,7 @@ impl Enemy {
                             new_attack = true;
                         }
                         if self.pos.overlaps_circ(player) {
-                            result = UpdateResult::HitPlayer;
+                            results.push(UpdateResult::HitPlayer);
                         }
                     },
                     AttackState::Web(ref mut cycle) => {
@@ -164,11 +161,12 @@ impl Enemy {
                 if self.health < self.max_health {
                     self.remove = true;
                     if (self.pos.center() - player.center()).len2() < 150.0*150.0 {
-                        result = UpdateResult::HitPlayer;
+                        results.push(UpdateResult::HitPlayer);
                     }
                     if (self.pos.center() - cord_pos.center()).len2() < 150.0*150.0 {
                         *cord_health -= 50.0;
                     }
+                    results.push(UpdateResult::BoomSpiderDetonate);
                 }
             },
             EnemyType::WebSpider(ref mut jump_cycle) => {
@@ -230,7 +228,6 @@ impl Enemy {
             }
         }
         self.pos = self.pos.translate(self.velocity).constrain(GAME_AREA);
-        result
     }
 }
 

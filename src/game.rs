@@ -20,6 +20,7 @@ pub struct GameScreen {
     assets: Assets
 }
 
+//CONSTANTS
 const MAX_ADRENALINE: f32 = 100.0; //Internal 100% adrenaline
 const COMBAT_ROLL_DURATION: i32 = 15; //Duration in ticks of combat roll
 const COMBAT_ROLL_COOLDOWN: i32 = 30; //Ticks between being able to activeate combat rolls
@@ -38,6 +39,8 @@ const ADRENALINE_DRAIN: f32 = 0.005; //Amount of adrenaline passively lost per t
 const WEB_SLOWDOWN: f32 = 0.2; //Factor the web effect slows you by
 pub const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, height: 476.0 }; //The size of the elevator floor
 const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned when the player dies
+const BOOM_SPIDER_PARTICLES: u32 = 60; //The amount of particles spawned when the spider dies
+const BOOM_SPIDER_PARTICLE_LIFE: i32 = 30;
 
 impl GameScreen {
     pub fn new(assets: Assets) -> GameScreen {
@@ -133,11 +136,27 @@ impl GameScreen {
                         (REDIRECT_MAX_RANGE - REDIRECT_MIN_RANGE) * self.adrenaline / MAX_ADRENALINE + REDIRECT_MIN_RANGE)) - p.pos.center()).normalize() * PLAYER_BULLET_SPEED;
             }
         }
+        let mut enemy_results = Vec::new();
         for e in self.enemies.iter_mut() {
-            let result = e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer);
-            match result {
-                UpdateResult::HitPlayer => GameScreen::player_hit(&mut self.player_down, &mut self.player_pos, &mut projectile_buffer),
-                UpdateResult::None => ()
+            enemy_results.clear();
+            e.update(self.player_pos, self.cord_pos, &mut self.cord_health, &mut self.projectiles, &mut self.enemy_buffer, &mut enemy_results);
+            for result in enemy_results.iter() {
+                match *result {
+                    UpdateResult::HitPlayer => GameScreen::player_hit(&mut self.player_down, &mut self.player_pos, &mut projectile_buffer),
+                    UpdateResult::BoomSpiderDetonate => {
+                        for i in 0..BOOM_SPIDER_PARTICLES {
+                            let angle = 360.0 * i as f32 / PLAYER_DEATH_PROJECTILES as f32;
+                            self.particles.push(Particle {
+                                image: self.assets.boom_spider_particle.clone(),
+                                pos: e.pos.center(),
+                                velocity: Vector::from_angle(angle) * 5,
+                                rotation: angle,
+                                rotational_velocity: 0.0,
+                                lifetime: BOOM_SPIDER_PARTICLE_LIFE
+                            });
+                        }
+                    }
+                }
             }
         }
         self.enemies.append(&mut self.enemy_buffer);

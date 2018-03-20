@@ -23,6 +23,7 @@ pub struct Assets {
     pub enemy_death_particle: Image,
     pub egg: Image,
     pub buffer_spider: Image,
+    pub boom_spider_particle: Image,
     pub fire: Sound,
     pub death: Sound,
 }
@@ -49,7 +50,8 @@ impl Assets {
             Image::load("img/wire.png"),
             Image::load("img/enemy_death_particle.png"),
             Image::load("img/egg.png"),
-            Image::load("img/buffer_spider.png")];
+            Image::load("img/buffer_spider.png"),
+            Image::load("img/boom_spider_particle.png")];
         let sounds = vec![Sound::load("snd/gun.wav"),
             Sound::load("snd/bat-death.wav")];
         join_all(images).join(join_all(sounds))
@@ -80,6 +82,7 @@ impl Assets {
             enemy_death_particle: images[18].clone(),
             egg: images[19].clone(),
             buffer_spider: images[20].clone(),
+            boom_spider_particle: images[21].clone(),
             fire: sounds[0].clone(),
             death: sounds[1].clone(),
         }
