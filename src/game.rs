@@ -219,18 +219,11 @@ impl GameScreen {
         });
         self.particles.extend(particles);
         clean_list(&mut self.projectiles, |_|());
-        //Enemies by elevation function:
-        //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
-        let mut dont_move = false;
-        for e in self.enemies.iter_mut() {
-            if e.enemy_type == EnemyType::GearLeg {
-                dont_move = true;
-                break;
-            }
-        }
-        if !dont_move {
+        if !self.enemies.iter().any(|e| e.enemy_type == EnemyType::GearLeg) {
             self.elevation += 1;
         }
+        //Enemies by elevation function:
+        //1.5 * sin(e / 200) + 1.2root(e / 350 + 2)
         // while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
         //     self.enemies.push(Enemy::gen_new());
         // }
