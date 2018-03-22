@@ -37,10 +37,10 @@ pub struct Enemy {
     pub velocity: Vector
 }
 
-const SPIDER_SEEK_FRAME: i32 = 150;
-const SPIDER_STAB_FRAME: i32 = 210;
-const SPIDER_ANGRY_SEEK_FRAME: i32 = 100;
-const SPIDER_ANGRY_STAB_FRAME: i32 = 145;
+pub const SPIDER_SEEK_FRAME: i32 = 150;
+pub const SPIDER_STAB_FRAME: i32 = 210;
+pub const SPIDER_ANGRY_SEEK_FRAME: i32 = 100;
+pub const SPIDER_ANGRY_STAB_FRAME: i32 = 145;
 
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {

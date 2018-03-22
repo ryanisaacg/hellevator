@@ -356,7 +356,16 @@ impl GameScreen {
             once(DrawCall::image(&self.assets.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
                     EnemyType::GearLeg => DrawCall::circle(e.pos).with_color(Color::orange()),
-                    EnemyType::SpiderLeg(_, _) => /*TODO Eventually draw leg when stabs*/DrawCall::rectangle(Rectangle::new(0, 0, 0, 0)),
+                    EnemyType::SpiderLeg(frame, angry) => {
+                        let leg_progess = if angry {
+                            (frame - SPIDER_ANGRY_SEEK_FRAME) as f32 / SPIDER_ANGRY_STAB_FRAME as f32
+                        } else {
+                            (frame - SPIDER_SEEK_FRAME) as f32 / SPIDER_STAB_FRAME as f32
+                        };
+                        let leg_progess = leg_progess.max(0.0).min(1.0);
+                        
+                        DrawCall::image(&self.assets.stab_leg, e.pos.center()).with_transform(double)
+                    },
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.assets.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.assets.web_spider, e.pos.center()).with_transform(double),
                     EnemyType::BufferSpider(_) => DrawCall::image(&self.assets.buffer_spider, e.pos.center()).with_transform(double),
