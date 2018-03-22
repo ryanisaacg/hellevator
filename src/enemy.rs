@@ -48,6 +48,7 @@ const MAMA_SPIDER_JUMP_IMPULSE: f32 = 8.0;
 const WEB_SPIDER_JUMP_IMPULSE: f32 = 8.0;
 const ANGRY_SPIDER_JUMP_IMPULSE: f32 = 8.0;
 const SPIDER_JUMP_IMPULSE: f32 = 8.0;
+const BULLET_KNOCKBACK: f32 = 6.0;
 const FRICTION: f32 = 0.9;
 
 fn impulse_towards(start: Vector, target: Vector, magnitude: f32, angle_variance: f32) -> Vector {
@@ -73,6 +74,15 @@ impl Enemy {
         };
         let invulnerable = if let EnemyType::SpiderLeg(_, _) = enemy_type { true } else { false };
         Enemy { pos, enemy_type, health, max_health: health, invulnerable, remove: false, velocity: Vector::zero() }
+    }
+
+    pub fn apply_knockback(&mut self, knockback: Vector) {
+        match self.enemy_type.clone() {
+            EnemyType::GearLeg | EnemyType::SpiderLeg(_, _) => {}
+            _ => {
+                self.velocity += knockback.with_len(BULLET_KNOCKBACK);
+            }
+        }
     }
 
     pub fn gen_new() -> Enemy {

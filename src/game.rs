@@ -42,7 +42,6 @@ const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned wh
 const BOOM_SPIDER_PARTICLES: u32 = 60; //The amount of particles spawned when the spider dies
 const BOOM_SPIDER_PARTICLE_LIFE: i32 = 30;
 const SPIDER_BOSS_PHASE_ELEVATIONS: &[i32] = &[200, 500, 800];
-const BULLET_KNOCKBACK: f32 = 6.0;
 
 impl GameScreen {
     pub fn new(assets: Assets) -> GameScreen {
@@ -173,7 +172,7 @@ impl GameScreen {
                 if p.pos.overlaps_circ(e.pos) && !e.invulnerable {
                     e.health -= 2.0 + 2.0 * self.adrenaline / MAX_ADRENALINE;
                     e.remove = e.health <= 0.0;
-                    e.velocity += p.vel.with_len(BULLET_KNOCKBACK);
+                    e.apply_knockback(p.vel);
                     p.remove = true;
                     self.adrenaline += ADRENALINE_GAIN;
                 }
