@@ -44,7 +44,7 @@ const SPIDER_ANGRY_STAB_FRAME: i32 = 145;
 
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
-        let h = match enemy_type {
+        let health = match enemy_type {
             EnemyType::GearLeg => 175.0,
             EnemyType::SpiderLeg(_, _) => 100.0,
             EnemyType::BufferSpider(_) => 250.0,
@@ -57,7 +57,7 @@ impl Enemy {
             EnemyType::Bat => 1.0
         };
         let invulnerable = if let EnemyType::SpiderLeg(_, _) = enemy_type { true } else { false };
-        Enemy { pos, enemy_type, health: h, max_health: h, invulnerable, remove: false, velocity: Vector::zero() }
+        Enemy { pos, enemy_type, health, max_health: health, invulnerable, remove: false, velocity: Vector::zero() }
     }
 
     pub fn gen_new() -> Enemy {
