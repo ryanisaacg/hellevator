@@ -37,10 +37,13 @@ pub struct Enemy {
     pub velocity: Vector
 }
 
+// Seek frame: the frame until which the leg will seek the player
+// Stab frame: the frame at which the leg will try to damage the player
 const SPIDER_SEEK_FRAME: i32 = 150;
 const SPIDER_STAB_FRAME: i32 = 210;
 const SPIDER_ANGRY_SEEK_FRAME: i32 = 100;
 const SPIDER_ANGRY_STAB_FRAME: i32 = 145;
+// The power with which various spiders jump
 const BOOM_SPIDER_JUMP_IMPULSE: f32 = 6.0;
 const BUFFER_SPIDER_PUNCH_IMPULSE: f32 = 16.0;
 const BUFFER_SPIDER_WEB_IMPULSE: f32 = 12.0;
@@ -48,7 +51,9 @@ const MAMA_SPIDER_JUMP_IMPULSE: f32 = 8.0;
 const WEB_SPIDER_JUMP_IMPULSE: f32 = 8.0;
 const ANGRY_SPIDER_JUMP_IMPULSE: f32 = 8.0;
 const SPIDER_JUMP_IMPULSE: f32 = 8.0;
+// The magnitude of the knockback vector when the player hits an enemy
 const BULLET_KNOCKBACK: f32 = 6.0;
+// The fraction of velocity retained each frame
 const FRICTION: f32 = 0.9;
 
 fn impulse_towards(start: Vector, target: Vector, magnitude: f32, angle_variance: f32) -> Vector {
