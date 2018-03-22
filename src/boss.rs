@@ -10,6 +10,7 @@ impl Boss {
     pub fn setup(&mut self, enemies: &mut Vec<Enemy>) {
         match self {
             &mut Boss::Spider => {
+                enemies.retain(|enemy| match enemy.enemy_type { EnemyType::SpiderLeg(_, _) => false, _ => true });
                 enemies.push(Enemy::new(Circle::new(100, 100, 50), EnemyType::SpiderLeg(0, false)));
                 enemies.push(Enemy::new(Circle::new(100, 100, 50), EnemyType::SpiderLeg(10, false)));
                 enemies.push(Enemy::new(Circle::new(50, 100, 50), EnemyType::GearLeg));

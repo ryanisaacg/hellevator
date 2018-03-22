@@ -41,6 +41,7 @@ pub const GAME_AREA: Rectangle = Rectangle { x: 0.0, y: 64.0, width: 960.0, heig
 const PLAYER_DEATH_PROJECTILES: u32 = 40; //The amount of projectiles spawned when the player dies
 const BOOM_SPIDER_PARTICLES: u32 = 60; //The amount of particles spawned when the spider dies
 const BOOM_SPIDER_PARTICLE_LIFE: i32 = 30;
+const SPIDER_BOSS_PHASE_ELEVATIONS: &[i32] = &[200, 500, 800];
 
 impl GameScreen {
     pub fn new(assets: Assets) -> GameScreen {
@@ -246,14 +247,17 @@ impl GameScreen {
         // while (self.enemies.len() as f32) < 1.5 * (self.elevation as f32 / 200.0).sin() + (self.elevation as f32 / 350.0 + 2.0).powf(1.0 / 1.2) {
         //     self.enemies.push(Enemy::gen_new());
         // }
-        if self.boss == Boss::None {
-            if self.elevation == 200 {
-                self.boss = Boss::Spider;
-                self.boss.setup(&mut self.enemies);
-            }
-        } else {
-            self.boss.update(&mut self.enemies);
+        if self.boss == Boss::None && self.elevation == SPIDER_BOSS_PHASE_ELEVATIONS[0] {
+            self.boss = Boss::Spider;
         }
+        if SPIDER_BOSS_PHASE_ELEVATIONS.contains(&self.elevation) {
+            self.boss.setup(&mut self.enemies);
+            if self.elevation == SPIDER_BOSS_PHASE_ELEVATIONS[2] {
+                self.enemies.push(Enemy::new(Circle::new(480, 280 + PLAYER_RADIUS * 3, PLAYER_RADIUS), EnemyType::BufferSpider(AttackState::Punch(0))));
+            }
+            self.elevation += 1;
+        }
+        self.boss.update(&mut self.enemies);
         self.adrenaline -= ADRENALINE_DRAIN;
         if self.adrenaline < 0.0 {
             self.adrenaline = 0.0;
