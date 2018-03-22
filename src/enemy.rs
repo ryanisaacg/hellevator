@@ -4,7 +4,7 @@ use game::GAME_AREA;
 #[derive(Copy, Clone, PartialEq)]
 pub enum EnemyType {
     GearLeg,
-    SpiderLeg(i32),
+    SpiderLeg(i32, bool),
     BufferSpider(AttackState),
     Egg(i32),
     BoomSpider(i32),
@@ -37,12 +37,16 @@ pub struct Enemy {
     pub velocity: Vector
 }
 
+const SPIDER_SEEK_FRAME: i32 = 150;
+const SPIDER_STAB_FRAME: i32 = 210;
+const SPIDER_ANGRY_SEEK_FRAME: i32 = 100;
+const SPIDER_ANGRY_STAB_FRAME: i32 = 145;
 
 impl Enemy {
     pub fn new(pos: Circle, enemy_type: EnemyType) -> Enemy {
         let h = match enemy_type {
             EnemyType::GearLeg => 175.0,
-            EnemyType::SpiderLeg(_) => 100.0,
+            EnemyType::SpiderLeg(_, _) => 100.0,
             EnemyType::BufferSpider(_) => 250.0,
             EnemyType::Egg(_) => 7.0,
             EnemyType::BoomSpider(_) => 99999.0,
@@ -52,7 +56,7 @@ impl Enemy {
             EnemyType::Spider(_, _) => 10.0,
             EnemyType::Bat => 1.0
         };
-        let invulnerable = if let EnemyType::SpiderLeg(_) = enemy_type { true } else { false };
+        let invulnerable = if let EnemyType::SpiderLeg(_, _) = enemy_type { true } else { false };
         Enemy { pos, enemy_type, health: h, max_health: h, invulnerable, remove: false, velocity: Vector::zero() }
     }
 
@@ -76,12 +80,14 @@ impl Enemy {
             EnemyType::GearLeg => {
 
             },
-            EnemyType::SpiderLeg(ref mut cycle) => {
+            EnemyType::SpiderLeg(ref mut cycle, is_angry) => {
                 *cycle += 1;
-                if *cycle < 150 {
+                let seek = if is_angry { SPIDER_ANGRY_SEEK_FRAME } else { SPIDER_SEEK_FRAME };
+                let stab = if is_angry { SPIDER_ANGRY_STAB_FRAME } else { SPIDER_STAB_FRAME };
+                if *cycle < seek {
                     self.pos = self.pos.translate(((player.center() - self.pos.center()) + Transform::rotate(*cycle * 6) * Vector::x() * 20) / (16 + *cycle/10));
                 }
-                if *cycle >= 210 {
+                if *cycle >= stab {
                     if self.pos.overlaps_circ(player) {
                         results.push(UpdateResult::HitPlayer);
                     }

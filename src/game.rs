@@ -214,7 +214,7 @@ impl GameScreen {
             death.play();
             let amount_particles = match enemy.enemy_type {
                 EnemyType::GearLeg => 60,
-                EnemyType::SpiderLeg(_) => 0,
+                EnemyType::SpiderLeg(_, _) => 0,
                 EnemyType::BufferSpider(_) => 42,
                 EnemyType::Egg(_) => 2,
                 EnemyType::BoomSpider(_) => 4,
@@ -252,7 +252,7 @@ impl GameScreen {
                 self.boss.setup(&mut self.enemies);
             }
         } else {
-            self.boss.update();
+            self.boss.update(&mut self.enemies);
         }
         self.adrenaline -= ADRENALINE_DRAIN;
         if self.adrenaline < 0.0 {
@@ -345,14 +345,14 @@ impl GameScreen {
                 EnemyType::Bat => (24, 1.0),
                 EnemyType::MamaSpider(_) => (8, 1.0),
                 EnemyType::Egg(_) => (8, 0.9),
-                EnemyType::SpiderLeg(_) => (2, 2.0),
+                EnemyType::SpiderLeg(_, _) => (2, 2.0),
                 EnemyType::BufferSpider(_) => (12, 2.0),
                 _ => (4, 1.0)
             };
             once(DrawCall::image(&self.assets.shadow, e.pos.center() + Vector::y() * shadow_offset).with_transform(double * Transform::scale(Vector::one() * shadow_size)).with_z(shadow_z))
                 .chain(once(match e.enemy_type {
                     EnemyType::GearLeg => DrawCall::circle(e.pos).with_color(Color::orange()),
-                    EnemyType::SpiderLeg(_) => /*TODO Eventually draw leg when stabs*/DrawCall::rectangle(Rectangle::new(0, 0, 0, 0)),
+                    EnemyType::SpiderLeg(_, _) => /*TODO Eventually draw leg when stabs*/DrawCall::rectangle(Rectangle::new(0, 0, 0, 0)),
                     EnemyType::BoomSpider(_) => DrawCall::image(&self.assets.explode_spider, e.pos.center()).with_transform(double),
                     EnemyType::WebSpider(_) => DrawCall::image(&self.assets.web_spider, e.pos.center()).with_transform(double),
                     EnemyType::BufferSpider(_) => DrawCall::image(&self.assets.buffer_spider, e.pos.center()).with_transform(double),
